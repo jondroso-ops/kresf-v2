@@ -41,6 +41,12 @@
         @keyframes hudFlash { 0%,100%{background-color:rgba(239,68,68,.25);border-color:#ef4444;} 50%{background-color:rgba(239,68,68,.7);border-color:#fca5a5;} }
         .hud-alert-active { animation:hudFlash 1s infinite; }
         .qr-box svg { width:100%; height:100%; display:block; }
+        .kresf-crossing {position:relative;height:100px;border-radius:12px;background:linear-gradient(#205944 58%,#344256 58%);overflow:hidden;}
+        .kresf-koala {position:absolute;top:16px;left:8px;font-size:30px;animation:kresf-walk 6s linear infinite;}
+        .kresf-road {position:absolute;right:18px;top:38px;font-size:30px;}
+        .kresf-under {position:absolute;bottom:4px;left:35%;font-size:11px;color:#d1fae5;background:#0f172a;padding:3px 5px;border-radius:4px;}
+        @keyframes kresf-walk {0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+        @media(prefers-reduced-motion:reduce){.kresf-koala{animation:none}}
     </style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden antialiased flex flex-col pt-[env(safe-area-inset-top)]">
@@ -154,8 +160,10 @@
                             <option>🌿 Safe in Tree Canopy</option>
                             <option>⚠️ Near Roadside (High Risk)</option>
                             <option>🛣️ Actively Crossing</option>
+                            <option>🩹 Injured / on the ground (call a rescuer)</option>
                         </select>
                     </div>
+                    <div><label for="rep-photo" class="block text-xs font-semibold text-slate-300 mb-1">Optional observation photo (preview only)</label><input id="rep-photo" type="file" accept="image/*" capture="environment" onchange="previewPhoto(this)" class="block w-full text-xs text-slate-300"><img id="rep-photo-preview" alt="Photo preview" class="hidden max-h-32 mt-2 rounded-lg" /><button type="button" onclick="clearPhoto()" class="text-xs underline text-slate-300 mt-2">Clear photo</button><p class="text-[10px] text-slate-400">Photo is not uploaded or stored. No report is transmitted to rescue services.</p></div>
                     <button onclick="submitReport()" class="w-full bg-brand-primary text-slate-950 font-black py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-transform">
                         LOG SIGHTING (+50 XP)
                     </button>
@@ -172,6 +180,7 @@
                     <p class="text-xs text-slate-400">Infrastructure Mitigation Simulator</p>
                 </div>
 
+                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><h3 class="font-bold text-sm mb-2">🐨 Demonstration crossing</h3><div class="kresf-crossing" role="img" aria-label="Illustration of a koala moving towards a fauna underpass"><span class="kresf-koala">🐨</span><span class="kresf-road">🛣️</span><span class="kresf-under">▰ Fauna underpass ▰</span></div><p class="text-[10px] text-slate-400 mt-2">Illustration only — real crossings require expert site design.</p></div>
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                         <p class="text-xs font-bold uppercase text-slate-400">Simulated Vehicle Strike Risk</p>
@@ -242,6 +251,7 @@
                     </div>
                 </div>
 
+                <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800"><h3 class="font-bold text-sm mb-2">Learning achievements</h3><div id="badge-grid" class="flex flex-wrap gap-2 text-xs"></div><p class="text-[10px] text-slate-400 mt-3">Achievements are local to this device. There is no online leaderboard.</p></div>
                 <div class="bg-white p-5 rounded-2xl shadow-xl text-center space-y-4">
                     <h3 class="text-sm font-black uppercase text-slate-900">Seamless Dual-QR Connection</h3>
                     <div class="grid grid-cols-2 gap-4">
@@ -456,13 +466,26 @@
             );
         }
 
+        function previewPhoto(input) {
+            const file = input.files?.[0], img = document.getElementById("rep-photo-preview");
+            if (!file) { clearPhoto(); return; }
+            if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) { toast("Choose an image smaller than 5 MB"); clearPhoto(); return; }
+            if (img.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+            img.dataset.objectUrl = URL.createObjectURL(file); img.src = img.dataset.objectUrl; img.classList.remove("hidden");
+        }
+        function clearPhoto() {
+            const img = document.getElementById("rep-photo-preview");
+            if (img.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+            img.removeAttribute("src"); delete img.dataset.objectUrl; img.classList.add("hidden");
+            document.getElementById("rep-photo").value = "";
+        }
         function submitReport() {
             const coords = document.getElementById('rep-coords').value;
             if (!/^-?\d+\.\d+, -?\d+\.\d+$/.test(coords)) { toast("Get your GPS location first (tap 📍)"); return; }
             sightingsLog.unshift({ coords, status: document.getElementById('rep-status').value, time: new Date().toLocaleString() });
             safeSet('kresf_logs', JSON.stringify(sightingsLog));
             userXP += 50; safeSet('kresf_xp', userXP);
-            document.getElementById('rep-coords').value = "";
+            document.getElementById('rep-coords').value = ""; clearPhoto();
             toast("Sighting logged! +50 XP");
             switchView('profile', document.querySelectorAll('.nav-btn')[3]);
         }
@@ -491,6 +514,8 @@
 
         function updateProfileUI() {
             document.getElementById('prof-xp').innerText = `${userXP} XP`;
+            const badges = [ ["🌱 First Observation", sightingsLog.length >= 1],["🦘 Field Researcher", sightingsLog.length >= 3],["🔬 R&D Explorer", userXP >= 250] ];
+            document.getElementById("badge-grid").replaceChildren(...badges.map(([name,earned])=>{const el=document.createElement("span");el.className="rounded-lg px-2 py-1 border "+(earned?"text-emerald-200 border-emerald-700 bg-emerald-900/50":"text-slate-400 border-slate-700");el.textContent=(earned?"✓ ":"🔒 ")+name;return el;}));
             const container = document.getElementById('logs-list-container');
             container.innerHTML = '';
             if (!sightingsLog.length) {
