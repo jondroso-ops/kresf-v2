@@ -11,7 +11,7 @@ try {
   // Block all CDN assets deliberately. The educational modules must remain usable.
   await page.route(/(cdn\.tailwindcss\.com|unpkg\.com|cdn\.jsdelivr\.net)/,route=>route.abort());
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  assert.match(await page.locator('h1').innerText(),/Protecting koalas/);
+  assert.match(await page.locator('h1').innerText(),/A safer road/);
   assert.equal(await page.locator('a[href="./app/"]').count()>0,true);
   console.log('PASS companion site opens on a mobile viewport');
 
