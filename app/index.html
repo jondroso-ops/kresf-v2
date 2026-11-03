@@ -47,7 +47,62 @@
         .kresf-under {position:absolute;bottom:4px;left:35%;font-size:11px;color:#d1fae5;background:#0f172a;padding:3px 5px;border-radius:4px;}
         @keyframes kresf-walk {0%{transform:translateX(0)}100%{transform:translateX(220px)}}
         @media(prefers-reduced-motion:reduce){.kresf-koala{animation:none}}
-    </style>
+    
+/* KRESF v3 DESIGN SYSTEM — a deliberate redesign of the original four-view UI */
+body {background:#061c1b;color:#eef9f4;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body>header {background:linear-gradient(115deg,#07382e,#0b2228 72%);border-bottom:2px solid #4fd4a0;box-shadow:0 5px 28px #0004}
+body>header h1 {font-size:1.24rem;letter-spacing:.035em}
+body>header p {font-family:inherit;letter-spacing:.07em;text-transform:uppercase}
+main {background:#092826!important}
+.app-view:not(#view-map) {background:radial-gradient(circle at top right,#14503d 0%,#092f2d 35%,#061c22 100%);padding:24px 18px calc(6rem + env(safe-area-inset-bottom));}
+.app-view:not(#view-map)>div {max-width:740px}
+.app-view:not(#view-map)>div>div:first-child {text-align:left;border:1px solid #5fd8ad40;border-radius:26px;padding:20px;background:linear-gradient(125deg,#24634878,#092a3699),radial-gradient(circle at right,#d5bc6d33,transparent 60%);box-shadow:0 20px 35px #001b1b44}
+.app-view:not(#view-map)>div>div:first-child h2 {font-size:clamp(1.8rem,5vw,2.35rem);line-height:1.1;letter-spacing:-.035em}
+.app-view:not(#view-map)>div>div:first-child>span {background:#c3f3de!important;border:0!important;color:#07402e}
+.app-view:not(#view-map)>div>div:first-child p {font-size:.84rem;color:#bce9d9}
+.app-view:not(#view-map)>div>div:not(:first-child) {border-radius:22px;box-shadow:0 12px 25px #0002}
+.app-view:not(#view-map) p.text-xs {font-size:.83rem;line-height:1.55}
+.app-view:not(#view-map) p.text-\[10px\] {font-size:.73rem;line-height:1.5}
+#view-report .bg-brand-rescue {background:linear-gradient(135deg,#f9a73e,#ea661a);border:1px solid #ffcc7a}
+#view-report .bg-brand-rescue h3 {font-size:.85rem}
+#view-report .bg-slate-900,#view-lab .bg-slate-900,#view-profile .bg-slate-900 {background:#103b37;border-color:#3b7468}
+#view-report input,#view-report select,#view-lab select {font-size:15px!important;min-height:44px}
+#view-report button,#view-map button,#view-lab button {min-height:42px}
+#view-map #hud-card {background:linear-gradient(125deg,#092b32ef,#153a35ef);border:1px solid #79d8b775;border-radius:22px;box-shadow:0 15px 40px #0007}
+#view-map .absolute.top-3>div:first-child {background:#ffefd4ee;color:#783a15;border:1px solid #ffcc86;font-size:10px;line-height:1.35;padding:9px;border-radius:12px;box-shadow:0 5px 15px #0003}
+#view-map .absolute.bottom-4 {background:#092e2dda;padding:10px;border-radius:17px;border:1px solid #67d4a655;backdrop-filter:blur(18px)}
+#view-map .absolute.bottom-4>div:first-child {border-color:#4bd1a1}
+#view-map #hud-target-name {font-size:1rem}
+#view-map #hud-distance {font-size:1.75rem}
+#view-map #hud-status-desc {font-size:.75rem;color:#cde8de}
+#view-map .pulse-marker-host {background:#fc694d;box-shadow:0 0 0 7px #fb765b44,0 0 16px #fb765b}
+#view-profile .bg-white {box-shadow:0 13px 38px #0005}
+#view-profile #badge-grid span {font-size:.8rem;padding:10px 12px}
+body>nav {background:#092e2d;border-top:1px solid #4abf9c6e;box-shadow:0 -8px 30px #0005}
+body>nav .nav-btn {border-radius:15px;padding:7px 4px;min-height:57px;transition:background .2s}
+body>nav .nav-btn.text-brand-primary {background:#1b6551;color:#d3ffdc!important}
+body>nav .nav-btn:not(.text-brand-primary) {color:#a5c7bf}
+body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
+.kresf-feature-panel {padding:18px;background:linear-gradient(145deg,#eff9e8,#d0ecdb)!important;color:#183d34;border:1px solid #c0dabc!important;border-radius:25px;box-shadow:0 18px 30px #0002}
+.kresf-panel-top {display:flex;align-items:center;justify-content:space-between;gap:7px}
+.kresf-eyebrow {font-weight:900;letter-spacing:.11em;font-size:11px;color:#27694c}
+.kresf-demo-tag {background:#f3ba56;color:#4d351a;font-weight:900;padding:5px 9px;border-radius:50px;font-size:9px}
+.kresf-panel-heading {font-size:1.55rem;letter-spacing:-.035em;margin:9px 0 3px;font-weight:900}
+.kresf-description {font-size:.81rem;line-height:1.5;margin-bottom:14px;color:#34574a}
+.kresf-habitat-scene {overflow:hidden;border-radius:16px;border:3px solid #9fcbb0;box-shadow:inset 0 2px 12px #0002}
+.kresf-habitat-scene svg {display:block;width:100%;height:auto}
+.kresf-car {animation:kresf-car-drive 5s linear infinite;transform-origin:0 0}
+.kresf-mother {animation:kresf-mother-walk 10s linear infinite;transform-origin:0 0}
+.kresf-joey {animation:kresf-joey-walk 10s linear infinite;transform-origin:0 0}
+@keyframes kresf-car-drive {from{transform:translate(640px,0)}to{transform:translate(-100px,0)}}
+@keyframes kresf-mother-walk {0%{transform:translate(34px,209px)}50%{transform:translate(250px,209px)}100%{transform:translate(518px,209px)}}
+@keyframes kresf-joey-walk {0%{transform:translate(19px,231px)}50%{transform:translate(215px,231px)}100%{transform:translate(485px,231px)}}
+.kresf-scene-legend {display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.kresf-scene-legend span {padding:5px 8px;border-radius:8px;background:#ffffffaa;font-size:11px;font-weight:750}
+.kresf-scene-footnote {color:#476554;font-size:11px;line-height:1.5;margin-top:10px}
+@media(max-width:450px){header #network-badge {display:none}#view-map .absolute.bottom-4 {left:7px;right:7px;flex-wrap:wrap}#view-map .absolute.bottom-4>div:last-child {flex-wrap:wrap}#view-map #hud-card {padding:12px}.kresf-feature-panel {padding:12px}}
+@media(prefers-reduced-motion:reduce){.kresf-car,.kresf-mother,.kresf-joey{animation:none}.kresf-car{transform:translate(420px,0)}.kresf-mother{transform:translate(200px,209px)}.kresf-joey{transform:translate(165px,231px)}}
+</style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden antialiased flex flex-col pt-[env(safe-area-inset-top)]">
 
@@ -183,7 +238,45 @@
                     <p class="text-xs text-slate-400">Infrastructure Mitigation Simulator</p>
                 </div>
 
-                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><h3 class="font-bold text-sm mb-2">🐨 Demonstration crossing</h3><div class="kresf-crossing" role="img" aria-label="Illustration of a koala moving towards a fauna underpass"><span class="kresf-koala">🐨</span><span class="kresf-road">🛣️</span><span class="kresf-under">▰ Fauna underpass ▰</span></div><p class="text-[10px] text-slate-400 mt-2">Illustration only — real crossings require expert site design.</p></div>
+                <div class="kresf-feature-panel">
+                    <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">ANIMATED MODEL</span></div>
+                    <h3 class="kresf-panel-heading">A safer way across</h3>
+                    <p class="kresf-description">Watch a mother koala and joey travel along a wildlife fence toward a purpose-built fauna underpass, away from traffic.</p>
+                    <div class="kresf-habitat-scene" role="img" aria-label="Animated mother koala and joey moving through a wildlife underpass below a road, with a protective fence beside the road">
+                      <svg viewBox="0 0 620 258" width="100%" role="presentation" aria-hidden="true">
+                        <defs>
+                          <linearGradient id="forestSky" x2="0" y2="1"><stop stop-color="#c4edd2"/><stop offset="1" stop-color="#f8e8b5"/></linearGradient>
+                          <linearGradient id="soil" x2="0" y2="1"><stop stop-color="#8d6341"/><stop offset="1" stop-color="#47382e"/></linearGradient>
+                        </defs>
+                        <rect width="620" height="258" fill="url(#forestSky)"/>
+                        <circle cx="520" cy="39" r="26" fill="#ffe5a2"/>
+                        <path d="M0 125 Q105 85 220 116T440 99T620 117V177H0Z" fill="#7eba8e"/>
+                        <g fill="#428965"><circle cx="43" cy="91" r="39"/><circle cx="87" cy="103" r="35"/><circle cx="569" cy="93" r="45"/></g>
+                        <path d="M50 138V80M574 147V80" stroke="#72573b" stroke-width="13" stroke-linecap="round"/>
+                        <rect x="0" y="140" width="620" height="42" fill="#50575e"/><path d="M0 160H620" stroke="#f8e7a7" stroke-width="3" stroke-dasharray="24 18"/>
+                        <g class="kresf-car"><rect x="0" y="142" width="82" height="28" rx="10" fill="#2d657d"/><path d="M16 142L30 130H61L73 142" fill="#2d657d"/><circle cx="19" cy="169" r="8" fill="#172b30"/><circle cx="64" cy="169" r="8" fill="#172b30"/></g>
+                        <rect y="181" width="620" height="77" fill="url(#soil)"/>
+                        <rect x="190" y="177" width="230" height="71" rx="17" fill="#8d9290" stroke="#d4d7cc" stroke-width="10"/>
+                        <rect x="207" y="184" width="196" height="57" rx="12" fill="#344f43"/>
+                        <path d="M0 243H620" stroke="#b59c66" stroke-width="4" stroke-dasharray="10 8"/>
+                        <path d="M18 138V182M46 138V182M74 138V182M102 138V182M130 138V182M158 138V182M186 138V182" stroke="#326f50" stroke-width="5"/>
+                        <path d="M18 144H186M18 161H186M18 178H186" stroke="#326f50" stroke-width="3"/>
+                        <path d="M432 138V182M460 138V182M488 138V182M516 138V182M544 138V182M572 138V182M600 138V182" stroke="#326f50" stroke-width="5"/>
+                        <path d="M432 144H600M432 161H600M432 178H600" stroke="#326f50" stroke-width="3"/>
+                        <g class="kresf-mother">
+                          <circle cx="11" cy="-18" r="11" fill="#849994"/><circle cx="44" cy="-18" r="11" fill="#849994"/>
+                          <ellipse cx="28" cy="7" rx="34" ry="25" fill="#92a7a0"/>
+                          <circle cx="26" cy="-7" r="24" fill="#a6b7ad"/>
+                          <ellipse cx="26" cy="0" rx="11" ry="15" fill="#415b60"/><circle cx="14" cy="-10" r="3" fill="#152b31"/><circle cx="38" cy="-10" r="3" fill="#152b31"/>
+                          <ellipse cx="12" cy="25" rx="9" ry="6" fill="#718b7b"/><ellipse cx="47" cy="25" rx="9" ry="6" fill="#718b7b"/>
+                        </g>
+                        <g class="kresf-joey"><circle cx="-7" cy="-8" r="8" fill="#829d95"/><circle cx="10" cy="-8" r="8" fill="#829d95"/><circle cx="0" cy="0" r="14" fill="#adc4b7"/><ellipse cx="0" cy="5" rx="6" ry="8" fill="#47585b"/><circle cx="-6" cy="-3" r="2" fill="#1c3434"/><circle cx="6" cy="-3" r="2" fill="#1c3434"/></g>
+                        <g font-family="system-ui" font-size="12" font-weight="700"><rect x="12" y="12" width="123" height="27" rx="12" fill="#fff" opacity=".94"/><text x="23" y="30" fill="#24583f">WILDLIFE FENCE</text><rect x="407" y="217" width="194" height="27" rx="12" fill="#f4f9ea"/><text x="416" y="235" fill="#265941">FAUNA UNDERPASS →</text></g>
+                      </svg>
+                    </div>
+                    <div class="kresf-scene-legend"><span>🌿 Protected habitat</span><span>🧱 Guiding fence</span><span>🚇 Safe crossing</span></div>
+                    <p class="kresf-scene-footnote">Illustrative animation only. Effective crossings depend on expert engineering, habitat connectivity and monitoring.</p>
+                </div>
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                         <p class="text-xs font-bold uppercase text-slate-400">Simulated Vehicle Strike Risk</p>
