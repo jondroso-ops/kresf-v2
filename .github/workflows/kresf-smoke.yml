@@ -66,7 +66,7 @@ jobs:
         run: node tests/review-screenshots.mjs
       - name: Upload private review screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: KRESF-v3-design-review-screenshots
           path: review/screenshots/*.png
