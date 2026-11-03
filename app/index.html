@@ -164,6 +164,7 @@
                             <option>🩹 Injured / on the ground (call a rescuer)</option>
                         </select>
                     </div>
+                    <label class="flex items-start gap-2 text-xs text-slate-200"><input type="checkbox" id="rep-demo" checked class="mt-0.5 w-4 h-4 accent-brand-primary">Classroom demonstration record (no GPS required). Uncheck to log an observation with a real GPS fix.</label>
                     <div><label for="rep-photo" class="block text-xs font-semibold text-slate-300 mb-1">Optional observation photo (preview only)</label><input id="rep-photo" type="file" accept="image/*" capture="environment" onchange="previewPhoto(this)" class="block w-full text-xs text-slate-300"><img id="rep-photo-preview" alt="Photo preview" class="hidden max-h-32 mt-2 rounded-lg" /><button type="button" onclick="clearPhoto()" class="text-xs underline text-slate-300 mt-2">Clear photo</button><p class="text-[10px] text-slate-400">Photo is not uploaded or stored. No report is transmitted to rescue services.</p></div>
                     <button onclick="submitReport()" class="w-full bg-brand-primary text-slate-950 font-black py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-transform">
                         LOG SIGHTING (+50 XP)
@@ -429,11 +430,15 @@
         function toggleDriveSimulation() {
             if (isSimulating) {
                 clearInterval(simInterval); isSimulating = false;
-                if (realGPS && userMarker) { currentLat = realGPS.lat; currentLng = realGPS.lng; userMarker.setLatLng([currentLat,currentLng]); evaluateRisk(currentLat,currentLng); }
+                if (realGPS) { currentLat = realGPS.lat; currentLng = realGPS.lng; }
+                else { currentLat = activeTarget.lat - 0.015; currentLng = activeTarget.lng; }
+                if (userMarker) userMarker.setLatLng([currentLat,currentLng]);
+                evaluateRisk(currentLat,currentLng);
                 document.getElementById('sim-btn-text').innerText = "Simulate";
                 return;
             }
             isSimulating = true;
+            simStep = 0;
             document.getElementById('sim-btn-text').innerText = "Pause";
             const sLat = activeTarget.lat - 0.012, sLng = activeTarget.lng - 0.008;
             simInterval = setInterval(() => {
@@ -492,12 +497,13 @@
         }
         function submitReport() {
             const coords = document.getElementById('rep-coords').value;
-            if (!/^-?\d+\.\d+, -?\d+\.\d+$/.test(coords)) { toast("Get your GPS location first (tap 📍)"); return; }
-            sightingsLog.unshift({ coords, status: document.getElementById('rep-status').value, time: new Date().toLocaleString() });
+            const demo = document.getElementById('rep-demo').checked;
+            if (!demo && !/^-?\\d+\\.\\d+, -?\\d+\\.\\d+$/.test(coords)) { toast("Get a real GPS fix first, or select classroom demonstration"); return; }
+            sightingsLog.unshift({ coords: demo ? 'Classroom demo — no location' : coords, demo, status: document.getElementById('rep-status').value, time: new Date().toLocaleString() });
             safeSet('kresf_logs', JSON.stringify(sightingsLog));
             userXP += 50; safeSet('kresf_xp', userXP);
             document.getElementById('rep-coords').value = ""; clearPhoto();
-            toast("Sighting logged! +50 XP");
+            toast("Local demonstration record saved! +50 XP");
             switchView('profile', document.querySelectorAll('.nav-btn')[3]);
         }
 
@@ -554,9 +560,7 @@
             const siteUrl = COMPANION_URL || appUrl;
             drawQR('qr-site', siteUrl); drawQR('qr-app', appUrl);
             const isLocal = !/^https:/.test(appUrl);
-            document.getElementById('qr-note').innerText = isLocal
-                ? 'These codes point to this page\'s address. Host the app on https:// and set COMPANION_URL in the code for the final poster.'
-                : (COMPANION_URL ? '' : 'Both codes use this app\'s address. Set COMPANION_URL for a separate website.');
+            document.getElementById('qr-note').innerText = isLocal ? 'Open through the hosted HTTPS site to install the PWA.' : 'Left QR: companion website. Right QR: mobile PWA. iPhone: Safari → Share → Add to Home Screen; Android: Chrome → Install app (when available).';
         }
 
         document.addEventListener("DOMContentLoaded", () => {
