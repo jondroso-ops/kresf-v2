@@ -113,6 +113,7 @@
                     <button onclick="toggleDriveSimulation()" class="bg-brand-primary text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-transform">
                         <span>🚗</span><span id="sim-btn-text">Simulate</span>
                     </button>
+                    <button id="btn-gps-init" onclick="startGPS()" aria-label="Enable optional GPS" title="Enable optional GPS" class="bg-slate-800 text-slate-100 px-3 py-2 rounded-xl border border-slate-600 text-xs">📍 GPS</button>
                     <button id="btn-audio-init" onclick="initAudioEngine()" class="bg-slate-800 text-amber-400 p-2.5 rounded-xl border border-slate-600 active:scale-95">🔊</button>
                 </div>
             </div>
@@ -302,6 +303,7 @@
         let timeMode = 'auto';
         let hasGPSFix = false;
         let realGPS = null;
+        let gpsWatchId = null;
 
         const CORRIDORS = {
             appin: { lat: -34.204, lng: 150.776, name: "Appin Road" },
@@ -345,32 +347,41 @@
         }
 
         function initMap() {
+            if (typeof L === 'undefined') {
+                document.getElementById('leafletMap').innerHTML =
+                   '<div style="color:white;padding:20px;position:absolute;inset:35% 0 auto;text-align:center;background:#0f172a">Map requires an internet connection on first visit. Other learning modules remain available.</div>';
+                document.getElementById('gps-text').innerText='MAP OFFLINE';
+                evaluateRisk(currentLat,currentLng);
+                return;
+            }
             map = L.map('leafletMap', { zoomControl: false }).setView([activeTarget.lat, activeTarget.lng], 14);
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+            const pulseIcon = L.divIcon({ className:'', html:'<div class="pulse-marker-host"></div>',iconSize:[24,24],iconAnchor:[12,12] });
+            Object.values(CORRIDORS).forEach(site => L.marker([site.lat,site.lng],{icon:pulseIcon}).addTo(map));
+            const userIcon = L.divIcon({className:'',html:'<div class="user-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+            userMarker=L.marker([currentLat,currentLng],{icon:userIcon}).addTo(map);
+            evaluateRisk(currentLat,currentLng);
+        }
 
-            const pulseHtmlIcon = L.divIcon({ className: '', html: '<div class="pulse-marker-host"></div>', iconSize: [24,24], iconAnchor: [12,12] });
-            Object.values(CORRIDORS).forEach(s => L.marker([s.lat, s.lng], { icon: pulseHtmlIcon }).addTo(map));
-
-            const userIcon = L.divIcon({ className: '', html: '<div class="user-dot"></div>', iconSize: [16,16], iconAnchor: [8,8] });
-            userMarker = L.marker([currentLat, currentLng], { icon: userIcon }).addTo(map);
-
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(
-                    pos => {
-                        hasGPSFix = true;
-                        realGPS = {lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, timestamp: pos.timestamp};
-                        document.getElementById('gps-dot').className = "w-2 h-2 rounded-full bg-brand-primary";
-                        document.getElementById('gps-text').innerText = "GPS FIX";
-                        if (isSimulating) return;
-                        currentLat = pos.coords.latitude; currentLng = pos.coords.longitude;
-                        userMarker.setLatLng([currentLat, currentLng]);
-                        evaluateRisk(currentLat, currentLng);
-                    },
-                    () => { document.getElementById('gps-text').innerText = "NO GPS"; },
-                    { enableHighAccuracy: true }
-                );
-            }
-            evaluateRisk(currentLat, currentLng);
+        // Location permissions are requested only after an explicit user gesture.
+        function startGPS() {
+            if (!('geolocation' in navigator)) { toast('GPS is unavailable on this device'); return; }
+            if (gpsWatchId !== null) { toast('GPS monitoring already enabled'); return; }
+            document.getElementById('gps-text').innerText='LOCATING';
+            gpsWatchId = navigator.geolocation.watchPosition(pos => {
+                realGPS={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,timestamp:pos.timestamp};
+                hasGPSFix=true;
+                document.getElementById('gps-dot').className='w-2 h-2 rounded-full bg-brand-primary';
+                document.getElementById('gps-text').innerText='GPS ±'+Math.round(pos.coords.accuracy)+'m';
+                if(isSimulating)return;
+                currentLat=realGPS.lat;currentLng=realGPS.lng;
+                if(userMarker)userMarker.setLatLng([currentLat,currentLng]);
+                evaluateRisk(currentLat,currentLng);
+            },error=>{
+                document.getElementById('gps-text').innerText=error.code===1?'GPS DENIED':'GPS UNAVAILABLE';
+                if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
+                toast('Location not available; demo mode continues');
+            },{enableHighAccuracy:true,maximumAge:30000,timeout:15000});
         }
 
         function jumpToCorridor(key) {
@@ -380,9 +391,9 @@
             document.getElementById('hud-target-name').innerText = activeTarget.name;
             if (!hasGPSFix) {                                // demo position just south of the corridor
                 currentLat = activeTarget.lat - 0.015; currentLng = activeTarget.lng;
-                userMarker.setLatLng([currentLat, currentLng]);
+                if (userMarker) userMarker.setLatLng([currentLat, currentLng]);
             }
-            map.setView([activeTarget.lat, activeTarget.lng], 14);
+            if (map) map.setView([activeTarget.lat, activeTarget.lng], 14);
             evaluateRisk(currentLat, currentLng);
         }
 
@@ -430,7 +441,7 @@
                 if (simStep > 60) simStep = 0;
                 const nLat = sLat + simStep * 0.00035, nLng = sLng + simStep * 0.00022;
                 currentLat = nLat; currentLng = nLng;
-                userMarker.setLatLng([nLat, nLng]); map.panTo([nLat, nLng]);
+                if (userMarker) userMarker.setLatLng([nLat, nLng]); if (map) map.panTo([nLat, nLng]);
                 evaluateRisk(nLat, nLng);
             }, 2600);
         }
