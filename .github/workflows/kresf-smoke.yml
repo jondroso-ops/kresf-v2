@@ -1,4 +1,4 @@
-name: KRESF static checks
+name: KRESF source and browser checks
 on:
   pull_request:
   push:
@@ -15,3 +15,24 @@ jobs:
           node-version: '22'
       - name: Validate educational PWA source
         run: node tests/smoke.test.mjs
+  browser:
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser testing dependencies
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start local GitHub Pages equivalent
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/kresf-server.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS http://127.0.0.1:8765/ >/dev/null; then break; fi
+            sleep 1
+          done
+      - name: Exercise mobile UI with blocked external dependencies
+        run: node tests/browser.test.mjs
