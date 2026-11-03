@@ -38,6 +38,15 @@ try {
   assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
   console.log('PASS local classroom progress persists after reload');
 
+  // The local app shell is precached by the app-scoped service worker.
+  await page.waitForFunction(() => 'serviceWorker' in navigator && !!navigator.serviceWorker.controller, {timeout:20000});
+  await context.setOffline(true);
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.match(await page.locator('#network-badge').innerText(),/OFFLINE/);
+  await page.locator('button[onclick="switchView(\\'profile\\', this)"]').click();
+  assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
+  console.log('PASS cached PWA shell reopens offline with local data intact');
+  await context.setOffline(false);
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
 } finally {
