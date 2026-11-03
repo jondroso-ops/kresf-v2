@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KRESF - Koala Road Eye Safety Feature</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KRESF">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="../icon-192.png">
+    <link rel="apple-touch-icon" href="../icon-192.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (window.tailwind) tailwind.config = {
+            theme: { extend: { colors: {
+                slate: { 850: '#141e33', 950: '#090d16' },
+                brand: { primary: '#10b981', danger: '#ef4444', warning: '#f59e0b', rescue: '#f97316' }
+            } } }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+    <style>
+        body { background-color:#0f172a; color:#f8fafc; overscroll-behavior-y:none; -webkit-tap-highlight-color:transparent; font-family:system-ui,-apple-system,sans-serif; }
+        .leaflet-layer, .leaflet-control-zoom-in, .leaflet-control-zoom-out, .leaflet-control-attribution { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%); }
+        .leaflet-container { background:#090d16 !important; }
+        .pulse-marker-host { width:24px; height:24px; background-color:#ef4444; border-radius:9999px; position:relative; box-shadow:0 0 10px #ef4444; }
+        .pulse-marker-host::after { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background-color:rgba(239,68,68,.4); border-radius:9999px; animation:pulse-ring 1.6s infinite ease-out; }
+        @keyframes pulse-ring { 0%{transform:scale(.4);opacity:1;} 100%{transform:scale(1.6);opacity:0;} }
+        .user-dot { width:16px; height:16px; background-color:#3b82f6; border:2px solid #fff; border-radius:9999px; box-shadow:0 0 12px #3b82f6; }
+        .app-view { display:none; height:100%; overflow-y:auto; padding-bottom:calc(5rem + env(safe-area-inset-bottom)); }
+        .app-view.active { display:block; }
+        @keyframes hudFlash { 0%,100%{background-color:rgba(239,68,68,.25);border-color:#ef4444;} 50%{background-color:rgba(239,68,68,.7);border-color:#fca5a5;} }
+        .hud-alert-active { animation:hudFlash 1s infinite; }
+        .qr-box svg { width:100%; height:100%; display:block; }
+        .kresf-crossing {position:relative;height:100px;border-radius:12px;background:linear-gradient(#205944 58%,#344256 58%);overflow:hidden;}
+        .kresf-koala {position:absolute;top:16px;left:8px;font-size:30px;animation:kresf-walk 6s linear infinite;}
+        .kresf-road {position:absolute;right:18px;top:38px;font-size:30px;}
+        .kresf-under {position:absolute;bottom:4px;left:35%;font-size:11px;color:#d1fae5;background:#0f172a;padding:3px 5px;border-radius:4px;}
+        @keyframes kresf-walk {0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+        @media(prefers-reduced-motion:reduce){.kresf-koala{animation:none}}
+    
+/* KRESF v3 DESIGN SYSTEM — a deliberate redesign of the original four-view UI */
+body {background:#061c1b;color:#eef9f4;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body>header {background:linear-gradient(115deg,#07382e,#0b2228 72%);border-bottom:2px solid #4fd4a0;box-shadow:0 5px 28px #0004}
+body>header h1 {font-size:1.24rem;letter-spacing:.035em}
+body>header p {font-family:inherit;letter-spacing:.07em;text-transform:uppercase}
+main {background:#092826!important}
+.app-view:not(#view-map) {background:radial-gradient(circle at top right,#14503d 0%,#092f2d 35%,#061c22 100%);padding:24px 18px calc(6rem + env(safe-area-inset-bottom));}
+.app-view:not(#view-map)>div {max-width:740px}
+.app-view:not(#view-map)>div>div:first-child {text-align:left;border:1px solid #5fd8ad40;border-radius:26px;padding:20px;background:linear-gradient(125deg,#24634878,#092a3699),radial-gradient(circle at right,#d5bc6d33,transparent 60%);box-shadow:0 20px 35px #001b1b44}
+.app-view:not(#view-map)>div>div:first-child h2 {font-size:clamp(1.8rem,5vw,2.35rem);line-height:1.1;letter-spacing:-.035em}
+.app-view:not(#view-map)>div>div:first-child>span {background:#c3f3de!important;border:0!important;color:#07402e}
+.app-view:not(#view-map)>div>div:first-child p {font-size:.84rem;color:#bce9d9}
+.app-view:not(#view-map)>div>div:not(:first-child) {border-radius:22px;box-shadow:0 12px 25px #0002}
+.app-view:not(#view-map) p.text-xs {font-size:.83rem;line-height:1.55}
+.app-view:not(#view-map) p.text-\[10px\] {font-size:.73rem;line-height:1.5}
+#view-report .bg-brand-rescue {background:linear-gradient(135deg,#f9a73e,#ea661a);border:1px solid #ffcc7a}
+#view-report .bg-brand-rescue h3 {font-size:.85rem}
+#view-report .bg-slate-900,#view-lab .bg-slate-900,#view-profile .bg-slate-900 {background:#103b37;border-color:#3b7468}
+#view-report input,#view-report select,#view-lab select {font-size:15px!important;min-height:44px}
+#view-report button,#view-map button,#view-lab button {min-height:42px}
+#view-map #hud-card {background:linear-gradient(125deg,#092b32ef,#153a35ef);border:1px solid #79d8b775;border-radius:22px;box-shadow:0 15px 40px #0007}
+#view-map .absolute.top-3>div:first-child {background:#ffefd4ee;color:#783a15;border:1px solid #ffcc86;font-size:10px;line-height:1.35;padding:9px;border-radius:12px;box-shadow:0 5px 15px #0003}
+#view-map .absolute.bottom-4 {background:#092e2dda;padding:10px;border-radius:17px;border:1px solid #67d4a655;backdrop-filter:blur(18px)}
+#view-map .absolute.bottom-4>div:first-child {border-color:#4bd1a1}
+#view-map #hud-target-name {font-size:1rem}
+#view-map #hud-distance {font-size:1.75rem}
+#view-map #hud-status-desc {font-size:.75rem;color:#cde8de}
+#view-map .pulse-marker-host {background:#fc694d;box-shadow:0 0 0 7px #fb765b44,0 0 16px #fb765b}
+#view-profile .bg-white {box-shadow:0 13px 38px #0005}
+#view-profile #badge-grid span {font-size:.8rem;padding:10px 12px}
+body>nav {background:#092e2d;border-top:1px solid #4abf9c6e;box-shadow:0 -8px 30px #0005}
+body>nav .nav-btn {border-radius:15px;padding:7px 4px;min-height:57px;transition:background .2s}
+body>nav .nav-btn.text-brand-primary {background:#1b6551;color:#d3ffdc!important}
+body>nav .nav-btn:not(.text-brand-primary) {color:#a5c7bf}
+body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
+.kresf-feature-panel {padding:18px;background:linear-gradient(145deg,#eff9e8,#d0ecdb)!important;color:#183d34;border:1px solid #c0dabc!important;border-radius:25px;box-shadow:0 18px 30px #0002}
+.kresf-panel-top {display:flex;align-items:center;justify-content:space-between;gap:7px}
+.kresf-eyebrow {font-weight:900;letter-spacing:.11em;font-size:11px;color:#27694c}
+.kresf-demo-tag {background:#f3ba56;color:#4d351a;font-weight:900;padding:5px 9px;border-radius:50px;font-size:9px}
+.kresf-panel-heading {font-size:1.55rem;letter-spacing:-.035em;margin:9px 0 3px;font-weight:900}
+.kresf-description {font-size:.81rem;line-height:1.5;margin-bottom:14px;color:#34574a}
+.kresf-habitat-scene {overflow:hidden;border-radius:16px;border:3px solid #9fcbb0;box-shadow:inset 0 2px 12px #0002}
+.kresf-habitat-scene svg {display:block;width:100%;height:auto}
+.kresf-car {animation:kresf-car-drive 5s linear infinite;transform-origin:0 0}
+.kresf-mother {animation:kresf-mother-walk 10s linear infinite;transform-origin:0 0}
+.kresf-joey {animation:kresf-joey-walk 10s linear infinite;transform-origin:0 0}
+@keyframes kresf-car-drive {from{transform:translate(640px,0)}to{transform:translate(-100px,0)}}
+@keyframes kresf-mother-walk {0%{transform:translate(34px,209px)}50%{transform:translate(250px,209px)}100%{transform:translate(518px,209px)}}
+@keyframes kresf-joey-walk {0%{transform:translate(19px,231px)}50%{transform:translate(215px,231px)}100%{transform:translate(485px,231px)}}
+.kresf-scene-legend {display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.kresf-scene-legend span {padding:5px 8px;border-radius:8px;background:#ffffffaa;font-size:11px;font-weight:750}
+.kresf-scene-footnote {color:#476554;font-size:11px;line-height:1.5;margin-top:10px}
+@media(max-width:450px){header #network-badge {display:none}#view-map .absolute.bottom-4 {left:7px;right:7px;flex-wrap:wrap}#view-map .absolute.bottom-4>div:last-child {flex-wrap:wrap}#view-map #hud-card {padding:12px}.kresf-feature-panel {padding:12px}}
+@media(prefers-reduced-motion:reduce){.kresf-car,.kresf-mother,.kresf-joey{animation:none}.kresf-car{transform:translate(420px,0)}.kresf-mother{transform:translate(200px,209px)}.kresf-joey{transform:translate(165px,231px)}}
+</style>
+</head>
+<body class="h-[100dvh] w-screen overflow-hidden antialiased flex flex-col pt-[env(safe-area-inset-top)]">
+
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 z-50 shadow-lg">
+        <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-brand-primary/10 border border-brand-primary/30 flex items-center justify-center text-xl">🐨</div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wide leading-none text-white">KRESF <span class="text-xs font-semibold text-brand-primary">System</span></h1>
+                <p class="text-[10px] text-slate-400 font-mono">Year 9 STEM Project</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="network-badge" aria-live="polite" class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">ONLINE</span>
+            <span id="time-badge" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">DAY</span>
+            <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+                <span id="gps-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span id="gps-text">STANDBY</span>
+            </span>
+        </div>
+    </header>
+
+    <main class="flex-1 relative overflow-hidden bg-slate-950">
+
+        <!-- MODULE 1: HUD MAP -->
+        <section id="view-map" class="app-view active h-full relative">
+            <div id="leafletMap" class="absolute inset-0 z-0"></div>
+
+            <div class="absolute top-3 left-3 right-3 z-[400] flex flex-col gap-2.5 pointer-events-none">
+                <div class="bg-slate-900/80 backdrop-blur text-[9px] text-slate-400 p-1.5 rounded-lg border border-slate-700/50 text-center uppercase tracking-wider font-semibold pointer-events-auto">
+                    STEM DEMO ONLY — No verified hazards, speed limits, or real-time koala detection. Never use while driving.
+                </div>
+                <div id="hud-card" class="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl pointer-events-auto transition-all duration-300">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🛣️</span>
+                            <div>
+                                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Hazard Corridor</h2>
+                                <p id="hud-target-name" class="text-sm font-bold text-white">Appin Road</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span id="hud-distance" class="text-2xl font-black text-brand-primary font-mono">-- m</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/50 mb-2">
+                        <div id="hud-progress-bar" class="bg-brand-primary h-full w-0 transition-all duration-300"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                        <span id="hud-status-desc">Outside demo radius</span>
+                        <span id="hud-speed" class="font-mono">Illustrative model</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute bottom-4 left-3 right-3 z-[400] flex justify-between items-center gap-2 pointer-events-auto">
+                <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700 rounded-xl px-3 py-2 text-xs flex items-center gap-2 shadow-lg">
+                    <span>📍</span>
+                    <select id="corridor-selector" onchange="jumpToCorridor(this.value)" class="bg-transparent text-white font-semibold outline-none">
+                        <option value="appin" class="bg-slate-900">Appin Rd (Sydney)</option>
+                        <option value="portstephens" class="bg-slate-900">Port Stephens Dr</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleDriveSimulation()" class="bg-brand-primary text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-transform">
+                        <span>🚗</span><span id="sim-btn-text">Simulate</span>
+                    </button>
+                    <button id="btn-gps-init" onclick="startGPS()" aria-label="Enable optional GPS" title="Enable optional GPS" class="bg-slate-800 text-slate-100 px-3 py-2 rounded-xl border border-slate-600 text-xs">📍 GPS</button>
+                    <button id="btn-audio-init" onclick="initAudioEngine()" class="bg-slate-800 text-amber-400 p-2.5 rounded-xl border border-slate-600 active:scale-95">🔊</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: SPOT & SAVE -->
+        <section id="view-report" class="app-view p-5">
+            <div class="max-w-md mx-auto space-y-5">
+                <div class="text-center space-y-1">
+                    <span class="inline-block p-3 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 text-3xl mb-1">📸</span>
+                    <h2 class="text-2xl font-black text-white">Spot & Save</h2>
+                    <p class="text-xs text-slate-400">Citizen Science & Rapid Rescue</p>
+                </div>
+
+                <div class="bg-brand-rescue p-4 rounded-2xl shadow-xl space-y-3">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-orange-950 text-center">Rapid Emergency Rescue Directory</h3>
+                    <a href="tel:1300094737" class="flex items-center gap-3 bg-white p-3 rounded-xl active:scale-95 transition-transform">
+                        <div class="bg-brand-warning text-white p-2 rounded-lg text-xl">📞</div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">WIRES Wildlife Rescue</p>
+                            <p class="font-black text-brand-rescue text-lg leading-tight">1300 094 737</p>
+                        </div>
+                    </a>
+                    <a href="tel:1300278358" class="flex items-center gap-3 bg-slate-900 border-2 border-white/20 p-3 rounded-xl active:scale-95 transition-transform">
+                        <div class="bg-emerald-600 text-white p-2 rounded-lg text-xs font-bold flex items-center justify-center">RSPCA</div>
+                        <div>
+                            <p class="font-bold text-white text-sm">RSPCA NSW</p>
+                            <p class="text-slate-300 text-xs">1300 278 358 · severely injured wildlife</p>
+                        </div>
+                    </a>
+                    <p class="text-[10px] text-orange-950 text-center font-semibold">Never approach an injured koala yourself. Pull over safely and call.</p>
+                </div>
+
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">GPS Telemetry</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="rep-coords" readonly placeholder="Tap 📍 to get your location" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono outline-none">
+                            <button onclick="refreshGPSReportCoords()" class="bg-slate-800 px-3 rounded-xl text-xs font-bold text-white">📍</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Sighting Status</label>
+                        <select id="rep-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none">
+                            <option>🌿 Safe in Tree Canopy</option>
+                            <option>⚠️ Near Roadside (High Risk)</option>
+                            <option>🛣️ Actively Crossing</option>
+                            <option>🩹 Injured / on the ground (call a rescuer)</option>
+                        </select>
+                    </div>
+                    <label class="flex items-start gap-2 text-xs text-slate-200"><input type="checkbox" id="rep-demo" checked class="mt-0.5 w-4 h-4 accent-brand-primary">Classroom demonstration record (no GPS required). Uncheck to log an observation with a real GPS fix.</label>
+                    <div><label for="rep-photo" class="block text-xs font-semibold text-slate-300 mb-1">Optional observation photo (preview only)</label><input id="rep-photo" type="file" accept="image/*" capture="environment" onchange="previewPhoto(this)" class="block w-full text-xs text-slate-300"><img id="rep-photo-preview" alt="Photo preview" class="hidden max-h-32 mt-2 rounded-lg" /><button type="button" onclick="clearPhoto()" class="text-xs underline text-slate-300 mt-2">Clear photo</button><p class="text-[10px] text-slate-400">Photo is not uploaded or stored. No report is transmitted to rescue services.</p></div>
+                    <button onclick="submitReport()" class="w-full bg-brand-primary text-slate-950 font-black py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-transform">
+                        LOG SIGHTING (+50 XP)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: HABITAT LAB -->
+        <section id="view-lab" class="app-view p-5">
+            <div class="max-w-md mx-auto space-y-5">
+                <div class="text-center space-y-1">
+                    <span class="inline-block p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-3xl mb-1">🔬</span>
+                    <h2 class="text-2xl font-black text-white">Habitat Lab</h2>
+                    <p class="text-xs text-slate-400">Infrastructure Mitigation Simulator</p>
+                </div>
+
+                <div class="kresf-feature-panel">
+                    <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">ANIMATED MODEL</span></div>
+                    <h3 class="kresf-panel-heading">A safer way across</h3>
+                    <p class="kresf-description">Watch a mother koala and joey travel along a wildlife fence toward a purpose-built fauna underpass, away from traffic.</p>
+                    <div class="kresf-habitat-scene" role="img" aria-label="Animated mother koala and joey moving through a wildlife underpass below a road, with a protective fence beside the road">
+                      <svg viewBox="0 0 620 258" width="100%" role="presentation" aria-hidden="true">
+                        <defs>
+                          <linearGradient id="forestSky" x2="0" y2="1"><stop stop-color="#c4edd2"/><stop offset="1" stop-color="#f8e8b5"/></linearGradient>
+                          <linearGradient id="soil" x2="0" y2="1"><stop stop-color="#8d6341"/><stop offset="1" stop-color="#47382e"/></linearGradient>
+                        </defs>
+                        <rect width="620" height="258" fill="url(#forestSky)"/>
+                        <circle cx="520" cy="39" r="26" fill="#ffe5a2"/>
+                        <path d="M0 125 Q105 85 220 116T440 99T620 117V177H0Z" fill="#7eba8e"/>
+                        <g fill="#428965"><circle cx="43" cy="91" r="39"/><circle cx="87" cy="103" r="35"/><circle cx="569" cy="93" r="45"/></g>
+                        <path d="M50 138V80M574 147V80" stroke="#72573b" stroke-width="13" stroke-linecap="round"/>
+                        <rect x="0" y="140" width="620" height="42" fill="#50575e"/><path d="M0 160H620" stroke="#f8e7a7" stroke-width="3" stroke-dasharray="24 18"/>
+                        <g class="kresf-car"><rect x="0" y="142" width="82" height="28" rx="10" fill="#2d657d"/><path d="M16 142L30 130H61L73 142" fill="#2d657d"/><circle cx="19" cy="169" r="8" fill="#172b30"/><circle cx="64" cy="169" r="8" fill="#172b30"/></g>
+                        <rect y="181" width="620" height="77" fill="url(#soil)"/>
+                        <rect x="190" y="177" width="230" height="71" rx="17" fill="#8d9290" stroke="#d4d7cc" stroke-width="10"/>
+                        <rect x="207" y="184" width="196" height="57" rx="12" fill="#344f43"/>
+                        <path d="M0 243H620" stroke="#b59c66" stroke-width="4" stroke-dasharray="10 8"/>
+                        <path d="M18 138V182M46 138V182M74 138V182M102 138V182M130 138V182M158 138V182M186 138V182" stroke="#326f50" stroke-width="5"/>
+                        <path d="M18 144H186M18 161H186M18 178H186" stroke="#326f50" stroke-width="3"/>
+                        <path d="M432 138V182M460 138V182M488 138V182M516 138V182M544 138V182M572 138V182M600 138V182" stroke="#326f50" stroke-width="5"/>
+                        <path d="M432 144H600M432 161H600M432 178H600" stroke="#326f50" stroke-width="3"/>
+                        <g class="kresf-mother">
+                          <circle cx="11" cy="-18" r="11" fill="#849994"/><circle cx="44" cy="-18" r="11" fill="#849994"/>
+                          <ellipse cx="28" cy="7" rx="34" ry="25" fill="#92a7a0"/>
+                          <circle cx="26" cy="-7" r="24" fill="#a6b7ad"/>
+                          <ellipse cx="26" cy="0" rx="11" ry="15" fill="#415b60"/><circle cx="14" cy="-10" r="3" fill="#152b31"/><circle cx="38" cy="-10" r="3" fill="#152b31"/>
+                          <ellipse cx="12" cy="25" rx="9" ry="6" fill="#718b7b"/><ellipse cx="47" cy="25" rx="9" ry="6" fill="#718b7b"/>
+                        </g>
+                        <g class="kresf-joey"><circle cx="-7" cy="-8" r="8" fill="#829d95"/><circle cx="10" cy="-8" r="8" fill="#829d95"/><circle cx="0" cy="0" r="14" fill="#adc4b7"/><ellipse cx="0" cy="5" rx="6" ry="8" fill="#47585b"/><circle cx="-6" cy="-3" r="2" fill="#1c3434"/><circle cx="6" cy="-3" r="2" fill="#1c3434"/></g>
+                        <g font-family="system-ui" font-size="12" font-weight="700"><rect x="12" y="12" width="123" height="27" rx="12" fill="#fff" opacity=".94"/><text x="23" y="30" fill="#24583f">WILDLIFE FENCE</text><rect x="407" y="217" width="194" height="27" rx="12" fill="#f4f9ea"/><text x="416" y="235" fill="#265941">FAUNA UNDERPASS →</text></g>
+                      </svg>
+                    </div>
+                    <div class="kresf-scene-legend"><span>🌿 Protected habitat</span><span>🧱 Guiding fence</span><span>🚇 Safe crossing</span></div>
+                    <p class="kresf-scene-footnote">Illustrative animation only. Effective crossings depend on expert engineering, habitat connectivity and monitoring.</p>
+                </div>
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <p class="text-xs font-bold uppercase text-slate-400">Simulated Vehicle Strike Risk</p>
+                        <span id="lab-risk-text" class="text-4xl font-black text-brand-danger font-mono">100%</span>
+                    </div>
+                    <div class="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-slate-800 mt-4">
+                        <div id="lab-risk-bar" class="bg-brand-danger h-full w-full transition-all duration-500"></div>
+                    </div>
+                    <p id="lab-note" class="text-[10px] text-slate-400 mt-2"></p>
+                </div>
+
+                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs font-bold uppercase text-slate-400 border-b border-slate-800 pb-2">Conditions</h3>
+                    <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                        <div>
+                            <p class="text-xs font-bold text-white">🌙 Time of day</p>
+                            <p class="text-[10px] text-slate-400">Koalas move on the ground mostly at dusk and night.</p>
+                        </div>
+                        <select id="sel-time" onchange="setTimeMode(this.value)" class="bg-slate-900 text-white text-xs rounded-lg border border-slate-700 px-2 py-1">
+                            <option value="auto">Auto (clock)</option>
+                            <option value="day">Day</option>
+                            <option value="night">Night</option>
+                        </select>
+                    </div>
+
+                    <h3 class="text-xs font-bold uppercase text-slate-400 border-b border-slate-800 pb-2 pt-2">Deploy Interventions</h3>
+                    <label class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                        <div>
+                            <p class="text-xs font-bold text-white">🧱 Exclusion Fencing (1.5m)</p>
+                            <p class="text-[10px] text-slate-400">Prevents road access.</p>
+                        </div>
+                        <input type="checkbox" id="chk-fence" class="w-5 h-5 accent-brand-primary" onchange="calculateLabRisk()">
+                    </label>
+                    <label class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                        <div>
+                            <p class="text-xs font-bold text-white">🕳️ Fauna Underpass</p>
+                            <p class="text-[10px] text-slate-400">Concrete box culvert. Works best with fencing.</p>
+                        </div>
+                        <input type="checkbox" id="chk-under" class="w-5 h-5 accent-brand-primary" onchange="calculateLabRisk()">
+                    </label>
+                    <label class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                        <div>
+                            <p class="text-xs font-bold text-white">🛑 Speed Limit (80 to 60)</p>
+                            <p class="text-[10px] text-slate-400">Cuts impact energy by about 44%.</p>
+                        </div>
+                        <input type="checkbox" id="chk-speed" class="w-5 h-5 accent-brand-primary" onchange="calculateLabRisk()">
+                    </label>
+                    <label class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+                        <div>
+                            <p class="text-xs font-bold text-white">📡 Virtual Fencing (signs / sensors)</p>
+                            <p class="text-[10px] text-slate-400">Field studies show almost no effect on its own.</p>
+                        </div>
+                        <input type="checkbox" id="chk-virtual" class="w-5 h-5 accent-brand-primary" onchange="calculateLabRisk()">
+                    </label>
+                    <p class="text-[10px] text-slate-500 italic">Illustrative model for a STEM demonstration, not measured data.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: GUARDIAN PROFILE -->
+        <section id="view-profile" class="app-view p-5">
+            <div class="max-w-md mx-auto space-y-5">
+                <div class="flex items-center gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+                    <div class="w-16 h-16 rounded-2xl bg-brand-primary/10 border-2 border-brand-primary flex items-center justify-center text-3xl">🛡️</div>
+                    <div>
+                        <h2 class="text-xl font-extrabold text-white">Guardian Profile</h2>
+                        <p id="prof-xp" class="text-sm font-mono text-brand-primary font-bold">0 XP</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800"><h3 class="font-bold text-sm mb-2">Learning achievements</h3><div id="badge-grid" class="flex flex-wrap gap-2 text-xs"></div><p class="text-[10px] text-slate-400 mt-3">Achievements are local to this device. There is no online leaderboard.</p></div>
+                <div class="bg-white p-5 rounded-2xl shadow-xl text-center space-y-4">
+                    <h3 class="text-sm font-black uppercase text-slate-900">Seamless Dual-QR Connection</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col items-center">
+                            <div id="qr-site" class="qr-box w-28 h-28 p-1 border-4 border-slate-900 rounded-lg mb-2 bg-white"></div>
+                            <span class="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">💻 Companion Website</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div id="qr-app" class="qr-box w-28 h-28 p-1 border-4 border-slate-900 rounded-lg mb-2 bg-white"></div>
+                            <span class="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">📱 Mobile PWA App</span>
+                        </div>
+                    </div>
+                    <p id="qr-note" class="text-[10px] text-slate-500"></p>
+                </div>
+
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                    <h3 class="text-xs font-bold uppercase text-slate-400 border-b border-slate-800 pb-2 mb-3">Field Logs</h3>
+                    <div id="logs-list-container" class="space-y-2 text-xs"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-24 z-[1000] bg-slate-100 text-slate-900 text-xs font-bold px-4 py-2 rounded-xl shadow-xl opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <nav class="bg-slate-900 border-t border-slate-800 pb-[env(safe-area-inset-bottom)] shrink-0 z-50">
+        <div class="flex justify-around items-center h-16 px-2">
+            <button onclick="switchView('map', this)" class="nav-btn text-brand-primary flex-1 flex flex-col items-center gap-1"><span class="text-xl">🗺️</span><span class="text-[10px] font-bold">HUD Map</span></button>
+            <button onclick="switchView('report', this)" class="nav-btn text-slate-400 hover:text-brand-primary flex-1 flex flex-col items-center gap-1"><span class="text-xl">📸</span><span class="text-[10px] font-bold">Spot & Save</span></button>
+            <button onclick="switchView('lab', this)" class="nav-btn text-slate-400 hover:text-brand-primary flex-1 flex flex-col items-center gap-1"><span class="text-xl">🔬</span><span class="text-[10px] font-bold">Habitat Lab</span></button>
+            <button onclick="switchView('profile', this)" class="nav-btn text-slate-400 hover:text-brand-primary flex-1 flex flex-col items-center gap-1"><span class="text-xl">🛡️</span><span class="text-[10px] font-bold">Guardian</span></button>
+        </div>
+    </nav>
+
+    <script>
+        // ===== CONFIG: set these once the site is hosted =====
+        // Companion website address for the first QR code. Leave '' to reuse this app's address.
+        const COMPANION_URL = 'https://jondroso-ops.github.io/kresf-v2/';
+
+        const safeParse = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
+        const safeSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+        let map, userMarker, simInterval, simStep = 0;
+        let audioCtx, isAudioUnlocked = false;
+        let isDangerActive = false, isSimulating = false;
+        let userXP = parseInt(safeParse('kresf_xp', 0)) || 0;
+        let sightingsLog = safeParse('kresf_logs', []);
+        let timeMode = 'auto';
+        let hasGPSFix = false;
+        let realGPS = null;
+        let gpsWatchId = null;
+
+        const CORRIDORS = {
+            appin: { lat: -34.204, lng: 150.776, name: "Appin Road" },
+            portstephens: { lat: -32.732, lng: 152.040, name: "Port Stephens Dr" }
+        };
+        let activeTarget = CORRIDORS.appin;
+        let currentLat = activeTarget.lat - 0.015, currentLng = activeTarget.lng;
+
+        // ---- Night logic: koalas are most active on the ground at dusk/night ----
+        function isNight() {
+            if (timeMode === 'day') return false;
+            if (timeMode === 'night') return true;
+            const d = new Date(), m = d.getHours() * 60 + d.getMinutes();
+            return m >= 17 * 60 + 30 || m < 6 * 60 + 30;   // 5:30 PM to 6:30 AM
+        }
+        const dangerRadius = () => isNight() ? 500 : 300;
+        function setTimeMode(v) { timeMode = v; refreshTimeUI(); }
+        function refreshTimeUI() {
+            const n = isNight();
+            const b = document.getElementById('time-badge');
+            b.innerText = n ? '🌙 NIGHT' : '☀️ DAY';
+            b.className = 'text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border ' + (n ? 'bg-indigo-900/60 border-indigo-500 text-indigo-200' : 'bg-slate-800 border-slate-700 text-slate-300');
+            document.getElementById('hud-speed').innerText = n ? 'Night-time example' : 'Day-time example';
+            calculateLabRisk();
+            evaluateRisk(currentLat, currentLng);
+        }
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.opacity = 1;
+            clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = 0, 2200);
+        }
+
+        function switchView(viewId, btnEl) {
+            document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => { el.classList.remove('text-brand-primary'); el.classList.add('text-slate-400'); });
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            btnEl.classList.remove('text-slate-400'); btnEl.classList.add('text-brand-primary');
+            if (viewId === 'map' && map) setTimeout(() => map.invalidateSize(), 150);
+            if (viewId === 'profile') updateProfileUI();
+        }
+
+        function refreshNetworkBadge() {
+            const el = document.getElementById("network-badge");
+            const online = navigator.onLine !== false;
+            el.textContent = online ? "ONLINE" : "OFFLINE";
+            el.title = online ? "Map tiles still require a network connection." : "Offline mode: map tiles and live network assets are unavailable.";
+            el.className = "text-[10px] font-bold uppercase px-2 py-1 rounded-full border " + (online ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-amber-950 border-amber-500 text-amber-200");
+        }
+        function initMap() {
+            if (typeof L === 'undefined') {
+                document.getElementById('leafletMap').innerHTML =
+                   '<div style="color:white;padding:20px;position:absolute;inset:35% 0 auto;text-align:center;background:#0f172a">Map requires an internet connection on first visit. Other learning modules remain available.</div>';
+                document.getElementById('gps-text').innerText='MAP OFFLINE';
+                evaluateRisk(currentLat,currentLng);
+                return;
+            }
+            map = L.map('leafletMap', { zoomControl: false }).setView([activeTarget.lat, activeTarget.lng], 14);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+            const pulseIcon = L.divIcon({ className:'', html:'<div class="pulse-marker-host"></div>',iconSize:[24,24],iconAnchor:[12,12] });
+            Object.values(CORRIDORS).forEach(site => L.marker([site.lat,site.lng],{icon:pulseIcon}).addTo(map));
+            const userIcon = L.divIcon({className:'',html:'<div class="user-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+            userMarker=L.marker([currentLat,currentLng],{icon:userIcon}).addTo(map);
+            evaluateRisk(currentLat,currentLng);
+        }
+
+        // Location permissions are requested only after an explicit user gesture.
+        function startGPS() {
+            if (!('geolocation' in navigator)) { toast('GPS is unavailable on this device'); return; }
+            if (gpsWatchId !== null) { toast('GPS monitoring already enabled'); return; }
+            document.getElementById('gps-text').innerText='LOCATING';
+            gpsWatchId = navigator.geolocation.watchPosition(pos => {
+                realGPS={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,timestamp:pos.timestamp};
+                hasGPSFix=true;
+                document.getElementById('gps-dot').className='w-2 h-2 rounded-full bg-brand-primary';
+                document.getElementById('gps-text').innerText='GPS ±'+Math.round(pos.coords.accuracy)+'m';
+                if(isSimulating)return;
+                currentLat=realGPS.lat;currentLng=realGPS.lng;
+                if(userMarker)userMarker.setLatLng([currentLat,currentLng]);
+                evaluateRisk(currentLat,currentLng);
+            },error=>{
+                document.getElementById('gps-text').innerText=error.code===1?'GPS DENIED':'GPS UNAVAILABLE';
+                if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
+                toast('Location not available; demo mode continues');
+            },{enableHighAccuracy:true,maximumAge:30000,timeout:15000});
+        }
+
+        function jumpToCorridor(key) {
+            if (!CORRIDORS[key]) return;
+            if (isSimulating) toggleDriveSimulation();      // stop any running drive
+            activeTarget = CORRIDORS[key];
+            document.getElementById('hud-target-name').innerText = activeTarget.name;
+            if (!hasGPSFix) {                                // demo position just south of the corridor
+                currentLat = activeTarget.lat - 0.015; currentLng = activeTarget.lng;
+                if (userMarker) userMarker.setLatLng([currentLat, currentLng]);
+            }
+            if (map) map.setView([activeTarget.lat, activeTarget.lng], 14);
+            evaluateRisk(currentLat, currentLng);
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3, p = Math.PI / 180;
+            const a = Math.sin((lat2-lat1)*p/2)**2 + Math.cos(lat1*p) * Math.cos(lat2*p) * Math.sin((lon2-lon1)*p/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function evaluateRisk(uLat, uLng) {
+            const dist = calculateDistance(uLat, uLng, activeTarget.lat, activeTarget.lng);
+            const radius = dangerRadius();
+            document.getElementById('hud-distance').innerText = dist >= 10000 ? `${(dist/1000).toFixed(0)} km` : `${Math.round(dist)} m`;
+
+            const bar = document.getElementById('hud-progress-bar');
+            bar.style.width = `${Math.max(0, Math.min(100, 100 - (dist/1500*100)))}%`;
+            const distEl = document.getElementById('hud-distance'), card = document.getElementById('hud-card');
+
+            if (dist <= radius) {
+                bar.className = "bg-brand-danger h-full transition-all";
+                distEl.className = "text-2xl font-black text-brand-danger font-mono";
+                document.getElementById('hud-status-desc').innerText = `⚠️ SIMULATED AREA (<${radius} m) — not a live warning`;
+                if (!isDangerActive) { isDangerActive = true; if (isSimulating) playAudioWarning(); if (isSimulating) card.classList.add('hud-alert-active'); }
+            } else {
+                bar.className = "bg-brand-primary h-full transition-all";
+                distEl.className = "text-2xl font-black text-brand-primary font-mono";
+                document.getElementById('hud-status-desc').innerText = `Outside demo radius (>${radius} m) — not a safety clearance`;
+                isDangerActive = false; card.classList.remove('hud-alert-active');
+            }
+        }
+
+        // Drive simulation: ~44 m per step every 2.6 s = about 60 km/h
+        function toggleDriveSimulation() {
+            if (isSimulating) {
+                clearInterval(simInterval); isSimulating = false;
+                if (realGPS) { currentLat = realGPS.lat; currentLng = realGPS.lng; }
+                else { currentLat = activeTarget.lat - 0.015; currentLng = activeTarget.lng; }
+                if (userMarker) userMarker.setLatLng([currentLat,currentLng]);
+                evaluateRisk(currentLat,currentLng);
+                document.getElementById('sim-btn-text').innerText = "Simulate";
+                return;
+            }
+            isSimulating = true;
+            simStep = 0;
+            document.getElementById('sim-btn-text').innerText = "Pause";
+            const sLat = activeTarget.lat - 0.012, sLng = activeTarget.lng - 0.008;
+            simInterval = setInterval(() => {
+                simStep++;
+                if (simStep > 60) simStep = 0;
+                const nLat = sLat + simStep * 0.00035, nLng = sLng + simStep * 0.00022;
+                currentLat = nLat; currentLng = nLng;
+                if (userMarker) userMarker.setLatLng([nLat, nLng]); if (map) map.panTo([nLat, nLng]);
+                evaluateRisk(nLat, nLng);
+            }, 2600);
+        }
+
+        function initAudioEngine() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            isAudioUnlocked = true;
+            document.getElementById('btn-audio-init').className = "bg-brand-primary text-slate-950 p-2.5 rounded-xl font-bold";
+        }
+
+        function playAudioWarning() {
+            if (!isAudioUnlocked || !audioCtx) return;
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), now = audioCtx.currentTime;
+            osc.type = 'triangle'; osc.frequency.value = 587.33;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.8, now + 0.08); gain.gain.linearRampToValueAtTime(0, now + 0.25);
+            gain.gain.setValueAtTime(0, now + 0.35);
+            gain.gain.linearRampToValueAtTime(0.8, now + 0.43); gain.gain.linearRampToValueAtTime(0, now + 0.60);
+            osc.start(now); osc.stop(now + 0.65);
+        }
+
+        // Real GPS only: the field stays empty until the device gives a position
+        function refreshGPSReportCoords() {
+            const field = document.getElementById('rep-coords');
+            if (!("geolocation" in navigator)) { toast("GPS not available on this device"); return; }
+            field.value = "Locating...";
+            navigator.geolocation.getCurrentPosition(
+                p => { field.value = `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`; },
+                () => { field.value = ""; toast("Couldn't get GPS. Check location permission."); },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        function previewPhoto(input) {
+            const file = input.files?.[0], img = document.getElementById("rep-photo-preview");
+            if (!file) { clearPhoto(); return; }
+            if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) { toast("Choose an image smaller than 5 MB"); clearPhoto(); return; }
+            if (img.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+            img.dataset.objectUrl = URL.createObjectURL(file); img.src = img.dataset.objectUrl; img.classList.remove("hidden");
+        }
+        function clearPhoto() {
+            const img = document.getElementById("rep-photo-preview");
+            if (img.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+            img.removeAttribute("src"); delete img.dataset.objectUrl; img.classList.add("hidden");
+            document.getElementById("rep-photo").value = "";
+        }
+        function submitReport() {
+            const coords = document.getElementById('rep-coords').value;
+            const demo = document.getElementById('rep-demo').checked;
+            if (!demo && !/^-?\\d+\\.\\d+, -?\\d+\\.\\d+$/.test(coords)) { toast("Get a real GPS fix first, or select classroom demonstration"); return; }
+            sightingsLog.unshift({ coords: demo ? 'Classroom demo — no location' : coords, demo, status: document.getElementById('rep-status').value, time: new Date().toLocaleString() });
+            safeSet('kresf_logs', JSON.stringify(sightingsLog));
+            userXP += 50; safeSet('kresf_xp', userXP);
+            document.getElementById('rep-coords').value = ""; clearPhoto();
+            toast("Local demonstration record saved! +50 XP");
+            switchView('profile', document.querySelectorAll('.nav-btn')[3]);
+        }
+
+        // Illustrative risk model. Baseline is lower by day (60) and full at night (100).
+        // Interventions reduce that baseline; fencing + underpass work together.
+        function calculateLabRisk() {
+            const fence = document.getElementById('chk-fence').checked, under = document.getElementById('chk-under').checked,
+                  spd = document.getElementById('chk-speed').checked, virt = document.getElementById('chk-virtual').checked;
+            const night = isNight();
+            const base = night ? 100 : 60;
+            let cut = (fence && under) ? 75 : fence ? 45 : under ? 15 : 0;
+            if (spd) cut += 20;
+            if (virt) cut += 3;
+            cut = Math.min(cut, 95);
+            const risk = Math.max(5, Math.round(base * (1 - cut / 100)));
+            const level = risk <= 15 ? 'good' : risk <= 40 ? 'mid' : 'bad';
+            const col = { good: 'brand-primary', mid: 'brand-warning', bad: 'brand-danger' }[level];
+            const txt = document.getElementById('lab-risk-text'), bar = document.getElementById('lab-risk-bar');
+            txt.innerText = `${risk}%`;
+            bar.style.width = `${risk}%`;
+            bar.className = `bg-${col} h-full transition-all duration-500`;
+            txt.className = `text-4xl font-black font-mono text-${col}`;
+            document.getElementById('lab-note').innerText = night ? 'Night: baseline risk 100% (peak ground movement).' : 'Day: baseline risk 60%.';
+        }
+
+        function updateProfileUI() {
+            document.getElementById('prof-xp').innerText = `${userXP} XP`;
+            const badges = [ ["🌱 First Observation", sightingsLog.length >= 1],["🦘 Field Researcher", sightingsLog.length >= 3],["🔬 R&D Explorer", userXP >= 250] ];
+            document.getElementById("badge-grid").replaceChildren(...badges.map(([name,earned])=>{const el=document.createElement("span");el.className="rounded-lg px-2 py-1 border "+(earned?"text-emerald-200 border-emerald-700 bg-emerald-900/50":"text-slate-400 border-slate-700");el.textContent=(earned?"✓ ":"🔒 ")+name;return el;}));
+            const container = document.getElementById('logs-list-container');
+            container.innerHTML = '';
+            if (!sightingsLog.length) {
+                container.innerHTML = '<p class="text-slate-500 text-center italic text-[11px]">No sightings yet.</p>';
+                return;
+            }
+            sightingsLog.forEach(l => {
+                const row = document.createElement('div');
+                row.className = 'bg-slate-950 p-3 rounded-xl border border-slate-800';
+                const a = document.createElement('p'); a.className = 'font-bold text-white text-xs'; a.textContent = l.status;
+                const b = document.createElement('p'); b.className = 'text-[10px] text-slate-400 font-mono'; b.textContent = `${l.coords} • ${l.time}`;
+                row.append(a, b); container.appendChild(row);
+            });
+        }
+
+        function drawQR(elId, text) {
+            const el = document.getElementById(elId);
+            try {
+                const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+                el.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+             } catch (e) {
+                el.replaceChildren();
+                const anchor = document.createElement('a');
+                anchor.href = text;
+                anchor.target = '_blank';
+                anchor.rel = 'noopener noreferrer';
+                anchor.textContent = 'Open link (QR unavailable offline)';
+                anchor.className = 'text-blue-700 text-xs underline';
+                el.appendChild(anchor);
+            }
+        }
+        function initQRCodes() {
+            const appUrl = new URL('./', location.href).href;
+            const siteUrl = COMPANION_URL || appUrl;
+            drawQR('qr-site', siteUrl); drawQR('qr-app', appUrl);
+            const isLocal = !/^https:/.test(appUrl);
+            document.getElementById('qr-note').innerText = isLocal ? 'Open through the hosted HTTPS site to install the PWA.' : 'Left QR: companion website. Right QR: mobile PWA. iPhone: Safari → Share → Add to Home Screen; Android: Chrome → Install app (when available).';
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            refreshNetworkBadge();
+            window.addEventListener("online", refreshNetworkBadge);
+            window.addEventListener("offline", refreshNetworkBadge);
+            initMap(); updateProfileUI(); initQRCodes(); refreshTimeUI();
+            setInterval(refreshTimeUI, 60000);
+            if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
+        });
+    </script>
+</body>
+</html>

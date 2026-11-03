@@ -1,21 +1,11 @@
-const CACHE = 'kresf-v2';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
-});
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET' || req.url.includes('tile.openstreetmap.org')) return; // map tiles: network only
-  e.respondWith(
-    caches.match(req).then(hit => {
-      const net = fetch(req).then(res => {
-        if (res && (res.ok || res.type === 'opaque')) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-        return res;
-      }).catch(() => hit);
-      return hit || net;
-    })
-  );
+// KRESF v3: retire legacy root-scoped PWA cache; the installable app lives at /app/.
+self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
+self.addEventListener('activate', event => event.waitUntil((async () => {
+  const names = await caches.keys();
+  await Promise.all(names.filter(name => name.startsWith('kresf-')).map(name => caches.delete(name)));
+  await self.clients.claim();
+})()));
+self.addEventListener('fetch', event => {
+  if (event.request.mode !== 'navigate' || new URL(event.request.url).origin !== self.location.origin) return;
+  event.respondWith(fetch(event.request).catch(() => new Response('KRESF companion website requires an internet connection. Reconnect and reload.',{headers:{'Content-Type':'text/plain; charset=utf-8'},status:503})));
 });
