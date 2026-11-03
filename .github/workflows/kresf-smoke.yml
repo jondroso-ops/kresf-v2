@@ -38,6 +38,11 @@ jobs:
           done
       - name: Exercise mobile UI with blocked external dependencies
         run: node tests/browser.test.mjs
+      - name: Validate GitHub Pages project subpath
+        run: |
+          mkdir -p kresf-v2
+          cp -R index.html app icon-192.png icon-512.png kresf-v2/
+          KRESF_BASE_URL=http://127.0.0.1:8765/kresf-v2/ node tests/browser.test.mjs
   review-screenshots:
     needs: smoke
     runs-on: ubuntu-24.04
