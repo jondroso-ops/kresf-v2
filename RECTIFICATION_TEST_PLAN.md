@@ -16,14 +16,16 @@ Educational Year 9 Research & Development prototype. **Not for use while driving
 - Adds a local photo preview and clear control; photos are **not stored or transmitted**.
 - Adds opt-in real-GPS or default GPS-free classroom demonstration recording; demonstration records contain no location.
 - Adds three local XP achievement badges (not community rankings).
-- Adds a simple animated koala crossing illustration with reduced-motion support.
+- Replaces the placeholder crossing illustration with an animated SVG habitat scene showing koala family, road traffic, exclusion fence and underpass, including reduced-motion support.
 - Adds separate website/app QR targets.
 - Creates a dedicated PWA manifest and app-scoped offline shell cache.
 - Retires the old root-site service-worker cache.
+- Redesigns the companion hero around a custom illustrated koala habitat, accessible sections and nature-oriented visual identity.
+- Introduces a coordinated forest-green mobile design with redesigned HUD overlays, module headers, learning panels and larger control areas.
 
 ## Automated source checks
 - Added `tests/smoke.test.mjs` and GitHub Actions workflow `.github/workflows/kresf-smoke.yml`.
-- Source parsing and route/privacy assertions passed in the connected GitHub review session; the workflow run itself still requires GitHub status confirmation.
+- Source parsing and route/privacy assertions pass in CI; browser interaction tests and screenshot workflow were successful on run `41726856775`.
 - These checks do not simulate an actual browser or guarantee offline resource availability.
 
 ## Mandatory tests before merging
@@ -47,7 +49,7 @@ Educational Year 9 Research & Development prototype. **Not for use while driving
 2. No real wildlife detection, verified hotspots, official road speeds or safety clearance.
 3. Sighting logs and XP are browser-local; no sending to authorities, real leaderboard or cross-device synchronization.
 4. QR scanning, iOS/Android installation, GPS accuracy, visual layout and native device behaviour have not yet been device-tested.
-5. The new site design is newly authored, rather than pixel-for-pixel reproduction of the original Netlify site.
+5. The new site design is an original reworking of the Netlify concept, not a pixel-for-pixel reproduction.
 6. No RSPCA emergency telephone number is claimed until independently validated.
 
 ## Release procedure
@@ -58,3 +60,10 @@ Educational Year 9 Research & Development prototype. **Not for use while driving
 
 ## Evidence
 Original school concept, NotebookLM planning history, research report, poster and GitHub v2 app were reviewed before changes. Research claims and simulator percentages are not represented as measured scientific results.
+
+## Design review — 04/11/2026
+- The first six captures were correctly criticised as not demonstrating an adequate visual redesign.
+- A substantial redesign has now been committed to the development branch and re-captured in Chromium.
+- Run **41726856775**: static tests, browser flow and design-screenshot generation all passed.
+- Founder review is still required before merge; do not treat screenshot review as production acceptance.
+- Further test scope: actual mobile installation, live map/CDN behavior, scroll and accessibility, emergency-contact verification, QR scans and feature inventory reconciliation.
