@@ -16,7 +16,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
+        if (window.tailwind) tailwind.config = {
             theme: { extend: { colors: {
                 slate: { 850: '#141e33', 950: '#090d16' },
                 brand: { primary: '#10b981', danger: '#ef4444', warning: '#f59e0b', rescue: '#f97316' }
@@ -60,6 +60,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <span id="network-badge" aria-live="polite" class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">ONLINE</span>
             <span id="time-badge" class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">DAY</span>
             <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1.5">
                 <span id="gps-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
@@ -347,6 +348,13 @@
             if (viewId === 'profile') updateProfileUI();
         }
 
+        function refreshNetworkBadge() {
+            const el = document.getElementById("network-badge");
+            const online = navigator.onLine !== false;
+            el.textContent = online ? "ONLINE" : "OFFLINE";
+            el.title = online ? "Map tiles still require a network connection." : "Offline mode: map tiles and live network assets are unavailable.";
+            el.className = "text-[10px] font-bold uppercase px-2 py-1 rounded-full border " + (online ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-amber-950 border-amber-500 text-amber-200");
+        }
         function initMap() {
             if (typeof L === 'undefined') {
                 document.getElementById('leafletMap').innerHTML =
@@ -553,7 +561,16 @@
             try {
                 const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
                 el.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
-            } catch (e) { el.innerHTML = '<p class="text-[9px] text-slate-500 p-2">QR needs internet the first time.</p>'; }
+             } catch (e) {
+                el.replaceChildren();
+                const anchor = document.createElement('a');
+                anchor.href = text;
+                anchor.target = '_blank';
+                anchor.rel = 'noopener noreferrer';
+                anchor.textContent = 'Open link (QR unavailable offline)';
+                anchor.className = 'text-blue-700 text-xs underline';
+                el.appendChild(anchor);
+            }
         }
         function initQRCodes() {
             const appUrl = new URL('./', location.href).href;
@@ -564,6 +581,9 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            refreshNetworkBadge();
+            window.addEventListener("online", refreshNetworkBadge);
+            window.addEventListener("offline", refreshNetworkBadge);
             initMap(); updateProfileUI(); initQRCodes(); refreshTimeUI();
             setInterval(refreshTimeUI, 60000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
