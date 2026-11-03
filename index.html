@@ -6,10 +6,90 @@
 <title>KRESF | Koala Road Eye Safety Feature — School Project</title>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#102c26;background:#f5faf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;line-height:1.65}a{color:#116d51}a:focus-visible,button:focus-visible{outline:3px solid #e39a28;outline-offset:3px}header{background:white;border-bottom:1px solid #dce9df;position:sticky;top:0;z-index:5}.shell{max-width:1100px;margin:auto;padding:0 24px}.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:72px;flex-wrap:wrap}.brand{font-weight:900;font-size:1.4rem;text-decoration:none;color:#10553f}.nav-links{display:flex;flex-wrap:wrap;gap:16px}.nav-links a{text-decoration:none;font-weight:650}.hero{background:linear-gradient(135deg,#d8f2dc,#f3f9e9 70%,#e4f2fa);padding:76px 0 90px}.eyebrow{display:inline-block;background:#c9e9d4;border-radius:99px;padding:6px 14px;font-weight:750;letter-spacing:.04em;font-size:.8rem;text-transform:uppercase}h1{font-size:clamp(2.6rem,6vw,5rem);line-height:1.08;letter-spacing:-.045em;margin:22px 0;max-width:770px}h2{font-size:clamp(1.8rem,3vw,2.55rem);line-height:1.18;letter-spacing:-.025em}h3{font-size:1.24rem;margin-top:0}p.lead{font-size:1.23rem;max-width:680px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.btn{display:inline-block;background:#116d51;color:white;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:750;border:2px solid transparent}.btn.secondary{background:transparent;border-color:#116d51;color:#116d51}.hero-note{color:#365c4e;font-size:.95rem;margin-top:22px}section{padding:60px 0}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.card{background:#fff;border:1px solid #dce9df;border-radius:20px;padding:23px;box-shadow:0 6px 25px rgba(18,80,49,.04)}.card .emoji{font-size:2.5rem;display:block;margin-bottom:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}.soft{background:#e7f4eb}.note{background:#fff4dc;padding:18px 20px;border-left:5px solid #bd7822;border-radius:12px}.steps{padding-left:1.3rem}.steps li{margin-bottom:12px}.qr-card{background:white;padding:28px;border-radius:24px;text-align:center;border:1px solid #dce9df}.qr{min-height:210px;display:flex;align-items:center;justify-content:center;background:#fff;margin:10px auto 18px;max-width:224px}.qr svg{max-width:210px;width:100%;height:auto}.small{font-size:.9rem;color:#486257}footer{padding:40px 0;background:#0e3328;color:#e3f5e9}footer a{color:#baf3d0}.label{font-size:.83rem;text-transform:uppercase;font-weight:800;color:#437963;letter-spacing:.08em}.contact a{font-weight:800}.contact p{margin:6px 0 0}.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.timeline strong{display:block;margin-bottom:5px}#qr-fallback{display:none} @media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.timeline{grid-template-columns:1fr}}@media(max-width:540px){.grid{grid-template-columns:1fr}.nav{padding:12px 0}.hero{padding:50px 0 60px}section{padding:40px 0}.shell{padding:0 18px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* KRESF v3 visual redesign */
+:root {color:#163e31;background:#f8f9f0}
+body {background:#f8f9f0}
+header {background:#ffffffed;backdrop-filter:blur(16px);border-bottom:2px solid #cce7d2}
+.brand {color:#145540;letter-spacing:-.03em}
+.nav-links a {color:#285f4b}
+.hero {background:radial-gradient(circle at 85% 20%,#eefbc1,transparent 30%),linear-gradient(135deg,#e0f5dd,#cbeade 55%,#f4edcd);padding:55px 0 70px;overflow:hidden}
+.hero-layout {display:grid;grid-template-columns:1.08fr .92fr;gap:46px;align-items:center}
+.hero-copy h1 {font-size:clamp(3rem,6vw,5.5rem);line-height:1.03;max-width:680px;color:#104839;letter-spacing:-.062em}
+.hero-copy h1 em {font-style:normal;color:#db7c2c}
+.hero-copy .lead {font-size:1.15rem;max-width:520px;color:#355b4a}
+.hero-copy .eyebrow {background:#fff9de;color:#215541;border:1px solid #f3d99b;font-size:.75rem}
+.hero-art {position:relative;border:11px solid #f9f8ee;border-radius:38px;box-shadow:0 28px 60px #19523d33,0 0 0 1px #9fceb5;overflow:hidden;transform:rotate(1deg);background:#e5f2d2}
+.hero-art svg {display:block;width:100%;height:auto;aspect-ratio:640/540}
+.hero-art-caption {position:absolute;bottom:16px;left:16px;right:16px;border-radius:15px;background:#0e4b3eea;color:#f4ffed;display:flex;justify-content:space-between;gap:8px;align-items:center;padding:11px 14px;font-size:.76rem}
+.hero-art-caption strong {color:#e5d18c;font-size:.68rem;letter-spacing:.05em}
+.hero-tokens {display:flex;gap:9px;flex-wrap:wrap;margin-top:23px}
+.hero-tokens span {font-size:.77rem;font-weight:760;background:#ffffffb9;border:1px solid #accbb8;border-radius:99px;padding:7px 12px}
+.btn {background:#145e45;padding:13px 19px;border-radius:13px;box-shadow:0 8px 18px #185b4133}
+.btn.secondary {background:#fff9e8;color:#185943;border-color:#185943;box-shadow:none}
+.hero-note {font-size:.82rem!important;max-width:520px;color:#4b695b}
+#features {background:linear-gradient(180deg,#0d4235,#103a36);color:#f1fbea}
+#features .label {color:#c6e3a5}
+#features .card {background:linear-gradient(150deg,#f8fff5,#d8ebdd);color:#143e36;border:1px solid #b7dbc0;box-shadow:0 15px 28px #001d173d}
+#features .card:nth-child(1){border-top:7px solid #60aeed}#features .card:nth-child(2){border-top:7px solid #5fc78d}
+#features .card:nth-child(3){border-top:7px solid #e4a657}#features .card:nth-child(4){border-top:7px solid #bc80d9}
+#features .card .emoji {font-size:2.8rem;background:#dff1e5;border-radius:20px;width:78px;height:78px;display:grid;place-items:center}
+#features .card h3 {font-size:1.3rem;letter-spacing:-.02em}
+#features .small {color:#cee1d7}
+#research .card {border-top:4px solid #a9c777}
+#rescue {background:#fff4df}
+#rescue .card {border-color:#f0ce92}
+#app {background:linear-gradient(135deg,#eaf7ee,#fff5d8)}
+#app .qr-card {box-shadow:0 18px 40px #12563c18;border:2px solid #b0d6bb}
+#app .qr {border:2px dashed #a7ccb7;border-radius:18px;padding:10px}
+@media(max-width:850px){.hero-layout{grid-template-columns:1fr;gap:25px}.hero-art{max-width:550px}.hero{padding:38px 0 56px}}
+@media(max-width:540px){.hero-copy h1{font-size:clamp(2.8rem,12vw,4.1rem)}.hero-art{border-width:7px;border-radius:25px}.hero-art-caption{flex-direction:column;align-items:flex-start;gap:0}.hero-tokens span{font-size:.7rem}}
 </style></head><body>
 <header><div class="shell nav"><a class="brand" href="#top">🐨 KRESF</a><nav class="nav-links" aria-label="Main navigation"><a href="#about">About</a><a href="#features">Features</a><a href="#research">Research</a><a href="#rescue">Wildlife help</a><a href="#app">Get the app</a></nav></div></header>
 <main id="top">
-<div class="hero"><div class="shell"><span class="eyebrow">Year 9 Research &amp; Development · STEM demonstration</span><h1>Protecting koalas.<br>Creating safer roads.</h1><p class="lead">KRESF — Koala Road Eye Safety Feature — explores how wildlife awareness, road design and technology could help reduce koala vehicle strikes.</p><div class="actions"><a class="btn" href="#app">Explore the mobile prototype</a><a class="btn secondary" href="#research">See the research and design</a></div><p class="hero-note">A student-designed educational prototype — not a real-time wildlife tracker, driving aid or emergency service.</p></div></div>
+<div class="hero">
+<div class="shell hero-layout">
+  <div class="hero-copy">
+    <span class="eyebrow">🐨 Year 9 STEM · Research &amp; Development</span>
+    <h1>A safer road.<br><em>A wilder future.</em></h1>
+    <p class="lead">Meet <strong>KRESF</strong> — Koala Road Eye Safety Feature. A student-built exploration of how mapping, awareness and wildlife crossings can help protect Australian koalas.</p>
+    <div class="actions"><a class="btn" href="./app/">Explore the mobile app</a><a class="btn secondary" href="#features">Discover the four modules</a></div>
+    <div class="hero-tokens"><span>🌿 Habitat protection</span><span>📍 Mapping concepts</span><span>🔬 STEM engineering</span></div>
+    <p class="hero-note"><strong>School demonstration:</strong> no live wildlife tracking, validated road warnings or driving guidance.</p>
+  </div>
+  <div class="hero-art" role="img" aria-label="Illustrated koala and joey in an Australian eucalyptus forest above a wildlife underpass">
+    <svg viewBox="0 0 640 540" aria-hidden="true">
+      <defs>
+        <linearGradient id="kSky" x2="0" y2="1"><stop stop-color="#d5f1dc"/><stop offset="1" stop-color="#f4dba1"/></linearGradient>
+        <linearGradient id="kEarth" x2="0" y2="1"><stop stop-color="#b1885c"/><stop offset="1" stop-color="#654631"/></linearGradient>
+      </defs>
+      <rect width="640" height="540" fill="url(#kSky)"/>
+      <circle cx="490" cy="105" r="62" fill="#fff0ae"/>
+      <path d="M0 280Q100 220 208 270T420 250T640 270V375H0" fill="#83bba0"/>
+      <path d="M0 335Q150 292 300 344T640 312V410H0" fill="#4b8b6e"/>
+      <path d="M82 370V127M560 380V82" stroke="#84633d" stroke-width="31" stroke-linecap="round"/>
+      <g fill="#2e7457"><circle cx="75" cy="120" r="85"/><circle cx="160" cy="165" r="57"/><circle cx="548" cy="91" r="86"/><circle cx="606" cy="155" r="67"/></g>
+      <g fill="#4da276" opacity=".8"><circle cx="27" cy="169" r="47"/><circle cx="194" cy="197" r="36"/><circle cx="614" cy="86" r="50"/></g>
+      <rect x="0" y="343" width="640" height="66" fill="#4a555a"/>
+      <path d="M0 377H640" stroke="#fff1bf" stroke-width="5" stroke-dasharray="34 23"/>
+      <rect y="409" width="640" height="131" fill="url(#kEarth)"/>
+      <path d="M196 540V420Q196 403 213 403H426Q444 403 444 420V540" fill="#a6b6ac" stroke="#d0d9c5" stroke-width="13"/>
+      <path d="M215 540V435Q215 422 230 422H406Q421 422 421 435V540" fill="#376550"/>
+      <path d="M0 416H191M449 416H640" stroke="#27664a" stroke-width="9"/>
+      <g stroke="#317452" stroke-width="7"><path d="M20 348V420M52 348V420M84 348V420M116 348V420M148 348V420M179 348V420M463 348V420M495 348V420M527 348V420M559 348V420M591 348V420M623 348V420"/></g>
+      <g transform="translate(304 475)">
+        <circle cx="-31" cy="-37" r="25" fill="#9aaea9"/><circle cx="32" cy="-37" r="25" fill="#9aaea9"/>
+        <ellipse cy="9" rx="67" ry="48" fill="#9aacaa"/>
+        <circle cy="-31" r="54" fill="#bdccc1"/>
+        <circle cx="-20" cy="-39" r="5" fill="#28463f"/><circle cx="20" cy="-39" r="5" fill="#28463f"/>
+        <ellipse cy="-16" rx="20" ry="29" fill="#425c57"/>
+        <path d="M-18 0Q0 15 18 0" fill="none" stroke="#526c61" stroke-width="4"/>
+        <g transform="translate(76 -19) scale(.52)"><circle cx="-26" cy="-36" r="26" fill="#a7bbb0"/><circle cx="27" cy="-36" r="26" fill="#a7bbb0"/><circle cy="-16" r="52" fill="#c4d2c8"/><ellipse cy="-3" rx="20" ry="27" fill="#435f57"/><circle cx="-20" cy="-24" r="5" fill="#25433c"/><circle cx="20" cy="-24" r="5" fill="#25433c"/></g>
+      </g>
+    </svg>
+    <div class="hero-art-caption"><strong>DESIGN CONCEPT</strong><span>Habitat • Wildlife fencing • Underpass</span></div>
+  </div>
+</div></div>
 <section id="about"><div class="shell two"><div><span class="label">The idea</span><h2>Why build KRESF?</h2><p>Koalas can be vulnerable when they cross roads between habitat areas. KRESF explores how an informative map, a demonstration warning interface and better infrastructure might support wildlife protection.</p><p>The project follows an engineering design process: identify a problem, research possible solutions, build a prototype, test it, and evaluate limitations.</p></div><div class="note"><strong>Safety first</strong><p>This project uses illustrative demonstration locations and calculations. There is no live koala detection, validated road hazard information, or verified speed-limit guidance. Never use the app while driving. Follow road signs and official advice.</p></div></div></section>
 <section id="features" class="soft"><div class="shell"><span class="label">Explore the four modules</span><h2>One project. Four ways to learn.</h2><div class="grid"><article class="card"><span class="emoji">🗺️</span><h3>Co-Pilot HUD</h3><p>Explore sample habitat corridors on a dark map, compare GPS position with fictional proximity zones, and try a simulated journey.</p></article><article class="card"><span class="emoji">📸</span><h3>Spot &amp; Save</h3><p>Learn how citizen-science sighting records could work. Demonstration reports are saved only in the device's browser.</p></article><article class="card"><span class="emoji">🔬</span><h3>Habitat Lab</h3><p>Try fencing, fauna underpasses and speed interventions in a simplified educational risk model.</p></article><article class="card"><span class="emoji">🛡️</span><h3>Guardian Profile</h3><p>Review saved demonstration observations and track learning points on the same device.</p></article></div><p class="small">Results are illustrative model outputs, not measured probabilities or confirmed mitigation effectiveness.</p></div></section>
 <section id="research"><div class="shell"><span class="label">Research &amp; development</span><h2>How the solution was designed</h2><div class="timeline"><div class="card"><strong>1 · Investigate</strong>Research koala habitats, crossing risks and wildlife rescue advice. Identify why roads can divide habitat.</div><div class="card"><strong>2 · Prototype</strong>Design an educational website and mobile PWA with interactive mapping, local sighting logs and mitigation controls.</div><div class="card"><strong>3 · Test and improve</strong>Test map behaviour, GPS permissions, installation, offline access and QR-code scanning. Record weaknesses and changes.</div></div><p>This digital concept is not a substitute for expert field studies, species monitoring or official road engineering design. Research references and testing evidence should be provided alongside the school presentation.</p></div></section>
