@@ -50,6 +50,12 @@ check('simulator resets after pause even with no GPS',()=>{
   assert.match(app,/simStep = 0;/);
   assert.match(app,/currentLat = activeTarget\.lat - 0\.015/);
 });
+check('network and CDN failures do not hide the QR link',()=> {
+  assert.match(app,/id="network-badge"/);
+  assert.match(app,/window\.addEventListener\("offline", refreshNetworkBadge\)/);
+  assert.match(app,/if \(window\.tailwind\) tailwind\.config/);
+  assert.match(app,/Open link \(QR unavailable offline\)/);
+});
 check('offline cache avoids map tiles',()=>{
   assert.match(sw,/kresf-v3-shell/);
   assert.match(sw,/THIRD_PARTY/);
