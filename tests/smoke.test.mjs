@@ -41,6 +41,15 @@ check('demo warning labels protect against real-world claims',()=>{
 check('core educational features remain',()=>{
   ['view-map','view-report','view-lab','view-profile','rep-photo','badge-grid','kresf-crossing'].forEach(id=>assert.ok(app.includes(id),id));
 });
+check('classroom demonstration works without a GPS fix',()=>{ 
+  assert.match(app,/id="rep-demo" checked/);
+  assert.match(app,/const demo = document\.getElementById\('rep-demo'\)\.checked/);
+  assert.match(app,/Classroom demo — no location/);
+});
+check('simulator resets after pause even with no GPS',()=>{
+  assert.match(app,/simStep = 0;/);
+  assert.match(app,/currentLat = activeTarget\.lat - 0\.015/);
+});
 check('offline cache avoids map tiles',()=>{
   assert.match(sw,/kresf-v3-shell/);
   assert.match(sw,/THIRD_PARTY/);
