@@ -9,7 +9,7 @@ const sw = fs.readFileSync('app/sw.js','utf8');
 
 function check(label, fn) { fn(); console.log('PASS '+label); }
 function scripts(html) {
-  return [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)]
+  return [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
     .map(m=>m[1]).filter(code=>code.trim());
 }
 check('website and app inline JavaScript parse', () => {
