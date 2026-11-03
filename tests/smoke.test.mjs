@@ -36,7 +36,7 @@ check('GPS requires explicit opt in',()=>{
 check('demo warning labels protect against real-world claims',()=>{
   assert.doesNotMatch(app,/Safe Buffer Zone|LIVE GPS|HIGH RISK ZONE/);
   assert.match(app,/not a live warning/);
-  assert.match(website,/not a real-time wildlife tracker/);
+  assert.match(website,/no live wildlife tracking/);
 });
 check('core educational features remain',()=>{
   ['view-map','view-report','view-lab','view-profile','rep-photo','badge-grid','kresf-crossing'].forEach(id=>assert.ok(app.includes(id),id));
