@@ -90,7 +90,7 @@
                     </div>
                     <div class="flex justify-between items-center text-[11px] text-slate-400 font-medium">
                         <span id="hud-status-desc">Outside demo radius</span>
-                        <span id="hud-speed" class="font-mono">Speed: 60 km/h</span>
+                        <span id="hud-speed" class="font-mono">Illustrative model</span>
                     </div>
                 </div>
             </div>
@@ -395,11 +395,11 @@
                 bar.className = "bg-brand-danger h-full transition-all";
                 distEl.className = "text-2xl font-black text-brand-danger font-mono";
                 document.getElementById('hud-status-desc').innerText = `⚠️ SIMULATED AREA (<${radius} m) — not a live warning`;
-                if (!isDangerActive) { isDangerActive = true; if (isSimulating) playAudioWarning(); card.classList.add('hud-alert-active'); }
+                if (!isDangerActive) { isDangerActive = true; if (isSimulating) playAudioWarning(); if (isSimulating) card.classList.add('hud-alert-active'); }
             } else {
                 bar.className = "bg-brand-primary h-full transition-all";
                 distEl.className = "text-2xl font-black text-brand-primary font-mono";
-                document.getElementById('hud-status-desc').innerText = `Safe Buffer Zone (>${radius} m)`;
+                document.getElementById('hud-status-desc').innerText = `Outside demo radius (>${radius} m) — not a safety clearance`;
                 isDangerActive = false; card.classList.remove('hud-alert-active');
             }
         }
