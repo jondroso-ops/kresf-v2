@@ -14,6 +14,7 @@ Educational Year 9 Research & Development prototype. **Not for use while driving
 - Removes live GPS audio warnings and misleading safe-zone language.
 - Restores the last GPS position after leaving drive simulation, and requests ongoing GPS permission only after the user taps GPS.
 - Adds a local photo preview and clear control; photos are **not stored or transmitted**.
+- Adds opt-in real-GPS or default GPS-free classroom demonstration recording; demonstration records contain no location.
 - Adds three local XP achievement badges (not community rankings).
 - Adds a simple animated koala crossing illustration with reduced-motion support.
 - Adds separate website/app QR targets.
@@ -31,6 +32,7 @@ Educational Year 9 Research & Development prototype. **Not for use while driving
 - [ ] Check the companion QR resolves to `/app/`, and the PWA's two QR codes resolve to `/` and `/app/`.
 - [ ] Test GPS permission allow/deny and simulated-versus-real-position switch.
 - [ ] Test photo preview, clear, and verify nothing is uploaded or saved.
+- [ ] Test GPS-free classroom demonstration reporting, then GPS-backed recording with permission.
 - [ ] Test local sighting persistence, XP and badges; test browser storage disabled.
 - [ ] Install the PWA from Android Chrome where supported and open from home screen.
 - [ ] Install from iPhone Safari using Share > Add to Home Screen and reopen.
