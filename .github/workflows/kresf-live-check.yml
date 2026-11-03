@@ -1,0 +1,36 @@
+name: Verify published KRESF site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Check GitHub Pages homepage, mobile app and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://jondroso-ops.github.io/kresf-v2/"
+          ok=0
+          for attempt in $(seq 1 20); do
+            if curl -fsSL --max-time 15 "${base}" -o /tmp/kresf-site.html &&
+               curl -fsSL --max-time 15 "${base}app/" -o /tmp/kresf-app.html &&
+               curl -fsSL --max-time 15 "${base}app/manifest.webmanifest" -o /tmp/kresf-manifest.json &&
+               grep -q 'A safer road' /tmp/kresf-site.html &&
+               grep -q 'kresf-habitat-scene' /tmp/kresf-app.html &&
+               grep -q '"display": "standalone"' /tmp/kresf-manifest.json; then
+              echo "PASS: verified published companion website, four-module PWA and app manifest."
+              ok=1
+              break
+            fi
+            echo "GitHub Pages not yet showing v3 (attempt ${attempt}); retrying."
+            sleep 12
+          done
+          if [ "${ok}" != 1 ]; then
+            echo "::error::Site, app or manifest did not reflect v3 within the verification window."
+            exit 1
+          fi
