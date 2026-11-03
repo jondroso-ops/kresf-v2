@@ -15,6 +15,8 @@ jobs:
           node-version: '22'
       - name: Validate educational PWA source
         run: node tests/smoke.test.mjs
+      - name: Scan source and workflow security invariants
+        run: node tests/security.test.mjs
   browser:
     needs: smoke
     runs-on: ubuntu-24.04
