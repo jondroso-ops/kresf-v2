@@ -48,4 +48,14 @@ pass('QR runtime is self-hosted with licence and local offline cache',()=>{
   assert.ok(fs.readFileSync('app/vendor/qrcode.LICENSE','utf8').includes('MIT License'));
   assert.doesNotMatch(app,/script-src[^"]*cdn\.jsdelivr\.net/);
 });
+pass('runtime Tailwind and QR CDNs are removed and Leaflet is integrity pinned',()=>{
+  assert.match(app,/href="\.\/styles\/tailwind\.css"/);
+  assert.doesNotMatch(app,/<script src="https:\/\/cdn\.tailwindcss\.com"/);
+  assert.doesNotMatch(app,/https:\/\/cdn\.jsdelivr\.net\/npm\/qrcode-generator/);
+  assert.match(app,/leaflet@1\.9\.4\/dist\/leaflet\.js" integrity="sha256-/);
+  assert.match(app,/leaflet@1\.9\.4\/dist\/leaflet\.css" integrity="sha256-/);
+  assert.match(app,/Content-Security-Policy/);
+  assert.doesNotMatch(app,/script-src[^"]*cdn\.tailwindcss\.com/);
+  assert.doesNotMatch(worker,/cdn\.tailwindcss\.com/);
+});
 console.log('KRESF static security checks complete; GitHub settings and dependency integrity remain separate review gates.');
