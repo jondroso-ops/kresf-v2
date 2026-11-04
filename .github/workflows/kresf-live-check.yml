@@ -25,6 +25,8 @@ jobs:
                grep -q 'kresf-habitat-scene' /tmp/kresf-app.html &&
                grep -q 'id="habitat-start"' /tmp/kresf-app.html &&
                grep -q 'function updateZoneAudio' /tmp/kresf-app.html &&
+               grep -q 'function saveLocalPhoto' /tmp/kresf-app.html &&
+               grep -q 'Save photo to phone' /tmp/kresf-app.html &&
                grep -q '"display": "standalone"' /tmp/kresf-manifest.json; then
               echo "PASS: verified published companion website, four-module PWA and app manifest."
               ok=1
