@@ -61,4 +61,18 @@ check('offline cache avoids map tiles',()=>{
   assert.match(sw,/THIRD_PARTY/);
   assert.match(sw,/if\(!own&&!allowed\.has\(url\.host\)\)return/);
 });
+check('level hero and interactive Habitat Lab controls',()=>{
+  assert.match(website,/\.hero-art[^}]*transform:none/);
+  assert.match(app,/id="habitat-start"/);
+  assert.match(app,/function startHabitatStory\(\)/);
+  assert.match(app,/function showHabitatCelebration\(\)/);
+  assert.match(app,/habitatResetTimer = setTimeout\(resetHabitatStory, 5000\)/);
+});
+check('audio limited to user-started 300m demonstration',()=>{
+  assert.match(app,/const dangerRadius = \(\) => 300/);
+  assert.match(app,/function updateZoneAudio\(distanceMetres\)/);
+  assert.match(app,/if \(!isSimulating\) return/);
+  assert.match(app,/zoneBeepTimer = setInterval/);
+  assert.match(app,/10000\)/);
+});
 console.log('All KRESF static smoke checks passed. Browser/device validation remains necessary.');
