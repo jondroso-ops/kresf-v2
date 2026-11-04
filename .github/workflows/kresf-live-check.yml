@@ -23,6 +23,8 @@ jobs:
                curl -fsSL --max-time 15 "${base}app/manifest.webmanifest" -o /tmp/kresf-manifest.json &&
                grep -q 'A safer road' /tmp/kresf-site.html &&
                grep -q 'kresf-habitat-scene' /tmp/kresf-app.html &&
+               grep -q 'id="habitat-start"' /tmp/kresf-app.html &&
+               grep -q 'function updateZoneAudio' /tmp/kresf-app.html &&
                grep -q '"display": "standalone"' /tmp/kresf-manifest.json; then
               echo "PASS: verified published companion website, four-module PWA and app manifest."
               ok=1
