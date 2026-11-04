@@ -126,6 +126,19 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 [hidden].habitat-scene-sign,[hidden].habitat-scene-virtual{display:none}
 #view-lab input[type=checkbox]:disabled{opacity:.35;cursor:not-allowed}
 #habitat-hint strong{color:#12654b}
+
+/* Depth-effect habitat: CSS/SVG only, with a flat fallback for older phones. */
+.habitat-camera-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px;font-size:12px;font-weight:850;color:#275740}
+.habitat-camera-bar button{border:1px solid #589c79;border-radius:12px;padding:8px 11px;background:#f4ffef;color:#19543a;font-size:11px;font-weight:850;min-height:36px}
+.kresf-habitat-scene{background:linear-gradient(#bfe8c8,#ded0a4);isolation:isolate}
+.kresf-habitat-scene svg{transform:perspective(850px) rotateX(7deg) scale(1.025);transform-origin:50% 70%;transition:transform .45s ease,filter .45s ease;filter:drop-shadow(0 4px 6px #19433550)}
+.kresf-habitat-scene.view-side svg{transform:none;filter:none}
+.kresf-habitat-scene.is-night svg{filter:brightness(.65) saturate(.85) hue-rotate(8deg)}
+.kresf-habitat-scene.view-side.is-night svg{filter:brightness(.65) saturate(.85)}
+.kresf-habitat-scene.traffic-slow .kresf-car{animation-duration:10s}
+.kresf-habitat-scene .habitat-far-trees{animation:habitat-forest-breeze 7s ease-in-out infinite alternate;transform-origin:50% 110px}
+@keyframes habitat-forest-breeze{from{transform:skewX(-1deg)}to{transform:skewX(1deg)}}
+@media(prefers-reduced-motion:reduce){.kresf-habitat-scene svg{transition:none;transform:none}.kresf-habitat-scene .habitat-far-trees{animation:none}}
 </style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden antialiased flex flex-col pt-[env(safe-area-inset-top)]">
@@ -264,12 +277,13 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 </div>
 
                 <div class="kresf-feature-panel">
-                    <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">ANIMATED MODEL</span></div>
+                    <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">3D-STYLE CLASSROOM MODEL</span></div>
                     <h3 class="kresf-panel-heading">A safer way across</h3>
-                    <p class="kresf-description">Watch a mother koala and joey travel along a wildlife fence toward a purpose-built fauna underpass, away from traffic.</p>
+                    <p class="kresf-description">Explore a layered, depth-effect road landscape. Watch traffic pass above the wildlife corridor while a mother koala and joey follow protective fencing toward the underpass.</p>
+                    <div class="habitat-camera-bar"><span id="habitat-view-label" aria-live="polite">◈ Perspective view</span><button type="button" id="habitat-camera" onclick="toggleHabitatCamera()" aria-pressed="false">Switch to flat view</button></div>
                     <button type="button" id="habitat-start" onclick="startHabitatStory()" class="habitat-start-pulse" aria-label="Start interactive koala crossing challenge">▶ START ANIMATION</button>
                     <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
-                    <div id="habitat-scene" class="kresf-habitat-scene" role="img" aria-label="Interactive illustrated road crossing with a mother koala, joey, fencing and an optional fauna underpass">
+                    <div id="habitat-scene" class="kresf-habitat-scene" role="img" aria-label="3D-style classroom road scene with animated traffic, koalas, fencing and optional fauna underpass">
                       <div id="habitat-mood" class="habitat-mood" aria-live="polite">😰 😟</div>
                       <div id="habitat-speed-sign" class="habitat-scene-sign" aria-hidden="true" hidden>🛑 60</div>
                       <div id="habitat-virtual-sign" class="habitat-scene-virtual" aria-hidden="true" hidden>📡</div>
@@ -278,19 +292,50 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                       <svg viewBox="0 0 620 258" width="100%" role="presentation" aria-hidden="true">
                         <defs>
                           <linearGradient id="forestSky" x2="0" y2="1"><stop stop-color="#c4edd2"/><stop offset="1" stop-color="#f8e8b5"/></linearGradient>
-                          <linearGradient id="soil" x2="0" y2="1"><stop stop-color="#8d6341"/><stop offset="1" stop-color="#47382e"/></linearGradient>
+                          <linearGradient id="soil" x2="0" y2="1"><stop stop-color="#b58a5a"/><stop offset=".48" stop-color="#80573d"/><stop offset="1" stop-color="#382d2c"/></linearGradient>
+                          <linearGradient id="roadDepth" x1="0" y1="0" x2=".1" y2="1"><stop stop-color="#78818a"/><stop offset=".65" stop-color="#424b56"/><stop offset="1" stop-color="#252b33"/></linearGradient>
+                          <linearGradient id="tunnelInner" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6b8d79"/><stop offset="1" stop-color="#172c2b"/></linearGradient>
+                          <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#79b48d"/><stop offset="1" stop-color="#2d6a52"/></linearGradient>
+                          <filter id="sceneShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="2" dy="6" stdDeviation="6" flood-color="#132923" flood-opacity=".38"/></filter>
                         </defs>
                         <rect width="620" height="258" fill="url(#forestSky)"/>
+                        <path d="M0 84Q120 47 226 82T455 73T620 83V161H0Z" fill="#a3cd9e" opacity=".85"/>
+                        <path d="M0 129Q105 92 220 117T435 100T620 114V173H0Z" fill="url(#ridge)"/>
+                        <g opacity=".42" stroke="#efffdb" stroke-width="2"><path d="M0 121Q125 108 210 120"/><path d="M399 112Q507 95 620 109"/></g>
+                        <g class="habitat-far-trees" fill="#337654">
+                          <path d="M137 122l16-46 18 46zM152 111V139" stroke="#4d6744" stroke-width="5"/>
+                          <path d="M314 118l17-49 18 49zM331 110V142" stroke="#4d6744" stroke-width="5"/>
+                          <path d="M476 123l13-37 15 37zM490 115V142" stroke="#4d6744" stroke-width="5"/>
+                        </g>
                         <circle cx="520" cy="39" r="26" fill="#ffe5a2"/>
                         <path d="M0 125 Q105 85 220 116T440 99T620 117V177H0Z" fill="#7eba8e"/>
                         <g fill="#428965"><circle cx="43" cy="91" r="39"/><circle cx="87" cy="103" r="35"/><circle cx="569" cy="93" r="45"/></g>
                         <path d="M50 138V80M574 147V80" stroke="#72573b" stroke-width="13" stroke-linecap="round"/>
-                        <rect x="0" y="140" width="620" height="42" fill="#50575e"/><path d="M0 160H620" stroke="#f8e7a7" stroke-width="3" stroke-dasharray="24 18"/>
-                        <g class="kresf-car"><rect x="0" y="142" width="82" height="28" rx="10" fill="#2d657d"/><path d="M16 142L30 130H61L73 142" fill="#2d657d"/><circle cx="19" cy="169" r="8" fill="#172b30"/><circle cx="64" cy="169" r="8" fill="#172b30"/></g>
-                        <rect y="181" width="620" height="77" fill="url(#soil)"/>
-                        <g class="kresf-underpass"><rect x="190" y="177" width="230" height="71" rx="17" fill="#8d9290" stroke="#d4d7cc" stroke-width="10"/>
-                        <rect x="207" y="184" width="196" height="57" rx="12" fill="#344f43"/></g>
-                        <path d="M0 243H620" stroke="#b59c66" stroke-width="4" stroke-dasharray="10 8"/>
+                        <path d="M0 135H620L620 186H0Z" fill="#29313b" opacity=".75"/>
+                        <path d="M0 140H620V180H0Z" fill="url(#roadDepth)" stroke="#b4bac0" stroke-width="2"/>
+                        <path d="M0 159H620" stroke="#f4cf7c" stroke-width="3" stroke-dasharray="26 21" opacity=".94"/>
+                        <path d="M0 181H620" stroke="#272e33" stroke-width="6" opacity=".6"/>
+                        <path d="M0 139H620" stroke="#cbd5d5" stroke-width="2"/>
+                        <g class="habitat-road-markings" opacity=".27" stroke="#f9f0ba" stroke-width="2"><path d="M18 176H99M190 176H265M382 176H452M550 176H613"/></g>
+                        <g class="kresf-car" filter="url(#sceneShadow)">
+                          <ellipse cx="43" cy="174" rx="48" ry="7" fill="#0c1516" opacity=".5"/>
+                          <path d="M-5 145Q3 138 15 140L26 130Q36 123 57 127L73 139Q86 142 87 150V161Q85 170 72 170H12Q-4 169-5 159Z" fill="#397a9b" stroke="#204459" stroke-width="2"/>
+                          <path d="M27 139L37 131H57L69 140Z" fill="#b3e6ec"/><path d="M27 139H70" stroke="#f4f9f3" stroke-width="1.5"/>
+                          <path d="M-4 151H87" stroke="#87b1bd" stroke-width="2" opacity=".5"/>
+                          <rect x="80" y="147" width="7" height="7" rx="2" fill="#ffe6a2"/><rect x="-4" y="147" width="5" height="7" rx="2" fill="#ff9b83"/>
+                          <circle cx="18" cy="170" r="9" fill="#141e25" stroke="#9ca6aa" stroke-width="2"/><circle cx="68" cy="170" r="9" fill="#141e25" stroke="#9ca6aa" stroke-width="2"/>
+                        </g>
+                        <rect y="182" width="620" height="76" fill="url(#soil)"/>
+                        <path d="M0 181H620V194Q350 182 0 198Z" fill="#c29a69" opacity=".72"/>
+                        <path d="M0 216Q92 203 180 224T391 222T620 221V258H0Z" fill="#66513c" opacity=".45"/>
+                        <g fill="#bdb083" opacity=".7"><ellipse cx="55" cy="243" rx="18" ry="4"/><ellipse cx="490" cy="244" rx="22" ry="5"/><ellipse cx="572" cy="223" rx="13" ry="4"/></g>
+                        <g class="kresf-underpass" filter="url(#sceneShadow)">
+                          <path d="M179 248V210Q179 169 230 170H388Q431 170 431 209V248H414V205Q414 187 390 187H227Q200 187 200 210V248Z" fill="#d2d5c7" stroke="#829087" stroke-width="4"/>
+                          <path d="M208 245V208Q208 193 229 193H388Q403 193 403 209V245Z" fill="url(#tunnelInner)"/>
+                          <path d="M230 241Q305 213 380 241" fill="none" stroke="#a3c092" stroke-width="4" opacity=".6"/>
+                          <path d="M180 192Q303 169 428 192" fill="none" stroke="#f5f0d9" stroke-width="4" opacity=".8"/>
+                        </g>
+                        <path d="M0 249Q310 240 620 249" stroke="#b59c66" stroke-width="4" stroke-dasharray="10 8" opacity=".65"/>
                         <g class="kresf-fence"><path d="M18 138V182M46 138V182M74 138V182M102 138V182M130 138V182M158 138V182M186 138V182" stroke="#326f50" stroke-width="5"/>
                         <path d="M18 144H186M18 161H186M18 178H186" stroke="#326f50" stroke-width="3"/>
                         <path d="M432 138V182M460 138V182M488 138V182M516 138V182M544 138V182M572 138V182M600 138V182" stroke="#326f50" stroke-width="5"/>
@@ -308,7 +353,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                       </svg>
                     </div>
                     <div class="kresf-scene-legend"><span>🌿 Protected habitat</span><span>🧱 Guiding fence</span><span>🚇 Safe crossing</span></div>
-                    <p class="kresf-scene-footnote">Choose the improvements below to change the scene. This is a classroom model—not verified animal behaviour or road-safety advice.</p>
+                    <p class="kresf-scene-footnote">Explore perspective or flat view, adjust traffic and add infrastructure. This is a layered 3D-style illustration—not a true physics simulation, measured road-risk assessment or real-world safety alert.</p>
                 </div>
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -952,6 +997,13 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 
         // Interactive school activity state machine. No real animals or road conditions are inferred.
         let habitatPhase = 'idle';
+        function toggleHabitatCamera() {
+            const scene=document.getElementById('habitat-scene');
+            const flat=scene.classList.toggle('view-side');
+            document.getElementById('habitat-camera').textContent=flat?'Switch to perspective':'Switch to flat view';
+            document.getElementById('habitat-camera').setAttribute('aria-pressed',String(flat));
+            document.getElementById('habitat-view-label').textContent=flat?'▤ Flat side view':'◈ Perspective view';
+        }
         let habitatCrossTimer = null, habitatResetTimer = null;
         const habitatInputs = () => ['chk-fence','chk-under','chk-speed','chk-virtual'].map(id => document.getElementById(id));
         function clearHabitatTimers() {
@@ -994,6 +1046,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             const scene = document.getElementById('habitat-scene');
             scene.classList.toggle('has-fence', fence);
             scene.classList.toggle('has-underpass', under);
+            scene.classList.toggle('traffic-slow', speed);
+            scene.classList.toggle('is-night', isNight());
             document.getElementById('habitat-speed-sign').hidden = !speed;
             document.getElementById('habitat-virtual-sign').hidden = !virtual;
             if (habitatPhase !== 'choosing') return;
