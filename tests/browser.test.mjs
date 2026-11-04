@@ -134,6 +134,16 @@ try {
   await page.mouse.move(canvasBounds.x+canvasBounds.width*.68,canvasBounds.y+canvasBounds.height*.68,{steps:6});
   await page.mouse.up();
   const afterYaw=await page.evaluate(()=>window.KresfHabitat3D.state.yaw);
+  if(Math.abs(afterYaw-beforeYaw)<=.1){
+    const diagnose=await page.evaluate(()=>{
+      const c=document.getElementById('habitat-webgl'),r=c.getBoundingClientRect();
+      return {rect:{x:r.x,y:r.y,width:r.width,height:r.height},element:document.elementFromPoint(r.x+r.width*.38,r.y+r.height*.68)?.id,
+        canvasHidden:c.hidden,viewMode:document.getElementById('habitat-scene').className,
+        yaw:window.KresfHabitat3D.state.yaw,
+        angle:window.KresfHabitat3D.state.elevation};
+    });
+    console.log('WEBGL_DRAG_DIAGNOSTIC',JSON.stringify({beforeYaw,afterYaw,diagnose}));
+  }
   assert.ok(Math.abs(afterYaw-beforeYaw)>.1,'Dragging should rotate the real 3D camera');
   const beforeZoom=await page.evaluate(()=>window.KresfHabitat3D.state.radius);
   await page.locator('#habitat-zoom-in').click();
