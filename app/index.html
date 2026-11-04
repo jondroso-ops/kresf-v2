@@ -134,7 +134,10 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 #habitat-webgl{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab;z-index:1}
 #habitat-webgl:active{cursor:grabbing}
 #habitat-webgl[hidden]{display:none}
-.kresf-habitat-scene.webgl-active svg{visibility:hidden}
+.kresf-habitat-scene.webgl-active{height:290px;min-height:270px}
+.kresf-habitat-scene.webgl-active svg{visibility:hidden;position:absolute;inset:0;width:100%;height:100%}
+@media(max-width:410px){.kresf-habitat-scene.webgl-active{height:270px}}
+
 .kresf-habitat-scene.webgl-active #habitat-webgl{display:block}
 .habitat-view-tools{display:flex;gap:6px;align-items:center}
 .habitat-view-tools button{border:1px solid #589c79;border-radius:10px;padding:8px;min-width:32px;min-height:36px;background:#f4ffef;color:#19543a;font-size:12px;font-weight:800}
