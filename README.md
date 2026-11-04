@@ -16,7 +16,7 @@ KRESF comprises a companion website and an installable Progressive Web App (PWA)
 | --- | --- |
 | **Co-Pilot HUD Map** | Example koala habitat corridors, map markers, optional browser GPS permission and a classroom-only driving simulation. |
 | **Spot & Save** | Create a local observation record, optionally attach a photo, and access the saved record from the Guardian Profile. Photos are stored privately in the browser (IndexedDB). Users may choose **Save photo to phone** to download a separate copy, or delete the locally stored photo. No observations or photos are uploaded to a KRESF server. |
-| **Habitat Lab** | Interactive **3D-style** layered SVG/CSS wildlife-crossing scene with perspective/flat views, animated vehicles, mother koala and joey, time-of-day lighting and engineering interventions. Press **Start Animation** to explore virtual warnings, speed reduction, exclusion fencing and an underpass. Combining fencing and underpass triggers a modelled crossing and five-second celebration/reset. Risk percentages are illustrative, not measured or predictive. |
+| **Habitat Lab** | Interactive **real WebGL 3D** wildlife-crossing scene with 3D terrain, elevated road, animated vehicles, mother koala and joey, wildlife fencing and fauna underpass. Rotate the camera by dragging and zoom with buttons, with a 2D SVG fallback when WebGL is unavailable. Press **Start Animation** to explore virtual warnings, speed reduction, exclusion fencing and an underpass. Combining fencing and underpass triggers a modelled crossing and five-second celebration/reset. Risk percentages are illustrative, not measured or predictive. |
 | **Guardian Profile** | On-device observation history and photos, learning progress/XP, individual observation/photo deletion, delete-all controls and project QR links. |
 
 ### Classroom audio demonstration
@@ -32,7 +32,7 @@ These are **simulated** warning events for learning, not verified hazard alerts.
 
 Open the [mobile app](https://jondroso-ops.github.io/kresf-v2/app/) using your phone browser. If your browser supports installing PWAs, use its **Install app** or **Add to Home Screen** option. Real-device Android/iOS installation and GPS behaviour should be checked before the school demonstration.
 
-The app's shell, compiled Tailwind styles and QR generator can work offline after caching. Map tiles remain online-only and external Leaflet resources may need connectivity on first installation. Cached navigation can fall back during network failures and temporary server errors, but offline operation is not guaranteed on every device. All locally saved records and photos are subject to the phone browser's storage availability and may disappear if browser data is cleared or the app is uninstalled. Download important photos separately.
+The app's shell, compiled Tailwind styles, QR generator and self-hosted WebGL renderer can work offline after caching. Map tiles remain online-only and external Leaflet resources may need connectivity on first installation. Cached navigation can fall back during network failures and temporary server errors, but offline operation is not guaranteed on every device. All locally saved records and photos are subject to the phone browser's storage availability and may disappear if browser data is cleared or the app is uninstalled. Download important photos separately.
 
 ## Hosting and release
 
