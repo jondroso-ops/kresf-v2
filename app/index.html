@@ -299,8 +299,6 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         <button type="button" id="habitat-camera" onclick="toggleHabitatCamera()" aria-pressed="false">Switch to 2D</button>
                       </div>
                     </div>
-                    <button type="button" id="habitat-start" onclick="startHabitatStory()" class="habitat-start-pulse" aria-label="Start interactive koala crossing challenge">▶ START ANIMATION</button>
-                    <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
                     <div id="habitat-scene" class="kresf-habitat-scene" role="group" aria-label="Interactive WebGL 3D educational wildlife crossing scene with 2D fallback">
                       <canvas id="habitat-webgl" aria-label="3D scene: drag to orbit around the road and animal crossing" hidden></canvas>
                       <div id="habitat-mood" class="habitat-mood" aria-live="polite">😰 😟</div>
@@ -371,6 +369,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         <g class="kresf-underpass" font-family="system-ui" font-size="12" font-weight="700"><rect x="407" y="217" width="194" height="27" rx="12" fill="#f4f9ea"/><text x="416" y="235" fill="#265941">FAUNA UNDERPASS →</text></g>
                       </svg>
                     </div>
+                    <button type="button" id="habitat-start" onclick="startHabitatStory()" class="habitat-start-pulse" aria-label="Start interactive koala crossing challenge">▶ START ANIMATION</button>
+                    <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
                     <div class="kresf-scene-legend"><span>🌿 Protected habitat</span><span>🧱 Guiding fence</span><span>🚇 Safe crossing</span></div>
                     <p class="kresf-scene-footnote">This is a real WebGL 3D model with a rotatable camera and 3D objects. Its movement and risk percentages remain illustrative, not physically calibrated animal behaviour, vehicle dynamics or safety advice. A 2D fallback appears when 3D graphics are unavailable.</p>
                 </div>
