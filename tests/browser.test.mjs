@@ -127,11 +127,13 @@ try {
   assert.match(webglCheck.version,/WebGL/);
   assert.ok(webglCheck.width>100 && webglCheck.height>80 && webglCheck.frames>3);
   const beforeYaw=await page.evaluate(()=>window.KresfHabitat3D.state.yaw);
+  // The app has a fixed bottom nav; scroll the 3D viewport fully into its scroll pane.
+  await page.locator('#habitat-webgl').evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));
   const canvasBounds=await page.locator('#habitat-webgl').boundingBox();
   assert.ok(canvasBounds,'3D canvas must be visible');
-  await page.mouse.move(canvasBounds.x+canvasBounds.width*.38,canvasBounds.y+canvasBounds.height*.68);
+  await page.mouse.move(canvasBounds.x+canvasBounds.width*.38,canvasBounds.y+canvasBounds.height*.55);
   await page.mouse.down();
-  await page.mouse.move(canvasBounds.x+canvasBounds.width*.68,canvasBounds.y+canvasBounds.height*.68,{steps:6});
+  await page.mouse.move(canvasBounds.x+canvasBounds.width*.68,canvasBounds.y+canvasBounds.height*.55,{steps:6});
   await page.mouse.up();
   const afterYaw=await page.evaluate(()=>window.KresfHabitat3D.state.yaw);
   if(Math.abs(afterYaw-beforeYaw)<=.1){
