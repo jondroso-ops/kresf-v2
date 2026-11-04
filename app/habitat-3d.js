@@ -9,7 +9,8 @@
   if(!scene||!canvas)return;
   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
   const state={active:false,ready:false,fence:false,under:false,speed:false,virtual:false,night:false,
-    phase:'idle',crossStarted:0,yaw:0.64,elevation:0.48,radius:17.8,frames:0};
+    phase:'idle',crossStarted:0,yaw:0.64,elevation:0.48,radius:17.8,frames:0,
+    geometry:{bridge:false,portal:false,corridorOpen:false,fenceBlocked:false,roadSurfaceAtCenter:.18}};
   let gl,program,loc,meshes,frame=0,lastFrame=0,drag=null,lost=false;
   const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   const v3=(x,y,z)=>[x,y,z];
@@ -169,8 +170,14 @@
     post:[.30,.37,.33],sky:[.63,.83,.87]
   };
   let viewProjection;
-  function draw(shape,x,y,z,sx,sy,sz,color,rot=0){
-    const data=meshes[shape],m=model(x,y,z,sx,sy,sz,rot);
+  function draw(shape,x,y,z,sx,sy,sz,color,rot=0,tilt=0){
+    const data=meshes[shape];
+    let m=model(x,y,z,sx,sy,sz,rot);
+    // Sloped road approaches rotate in 3D about the longitudinal Z axis.
+    if(tilt){
+      const c=Math.cos(tilt),t=Math.sin(tilt);
+      m=new Float32Array([c*sx,t*sx,0,0,-t*sy,c*sy,0,0,0,0,sz,0,x,y,z,1]);
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER,data.buffer);
     gl.enableVertexAttribArray(loc.position);gl.vertexAttribPointer(loc.position,3,gl.FLOAT,false,24,0);
     gl.enableVertexAttribArray(loc.normal);gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,24,12);
@@ -194,54 +201,107 @@
       ball(x,.1,z,.58,.12,.48,colors.forest);
     }
   }
+  // Surface of the road at the vehicle wheel contact point.
+  // Until the underpass is selected, the road is flush with surrounding terrain.
+  const ROAD_LOW=.18, ROAD_HIGH=1.06, BRIDGE_HALF=1.4, RAMP_END=5.5;
+  function roadHeightAt(x){
+    if(!state.under)return ROAD_LOW;
+    const distance=Math.abs(x);
+    if(distance<=BRIDGE_HALF)return ROAD_HIGH;
+    if(distance>=RAMP_END)return ROAD_LOW;
+    return ROAD_LOW+(ROAD_HIGH-ROAD_LOW)*(RAMP_END-distance)/(RAMP_END-BRIDGE_HALF);
+  }
+  function roadSlab(x,length,surfaceHeight,tilt=0){
+    draw('cube',x,surfaceHeight-.10,0,length/2,.10,1.87,colors.road,0,tilt);
+    // Road edges and centre markings follow the same grade as the slab.
+    draw('cube',x,surfaceHeight+.018,-1.7,length/2,.018,.055,colors.white,0,tilt);
+    draw('cube',x,surfaceHeight+.018,1.7,length/2,.018,.055,colors.white,0,tilt);
+    draw('cube',x,surfaceHeight+.022,0,length*.30,.014,.045,colors.yellow,0,tilt);
+  }
   function road(){
-    // Earthworks on either side leave a REAL open 3D tunnel beneath the bridge.
-    box(-8.25,.65,0,11.5,1.38,3.8,colors.soil);
-    box(8.25,.65,0,11.5,1.38,3.8,colors.soil);
-    box(0,1.35,0,27,.25,3.7,colors.stone);
-    box(0,1.51,0,27,.12,3.55,colors.road);
-    box(0,1.6,-1.65,27,.19,.12,colors.white);
-    box(0,1.6,1.65,27,.19,.12,colors.white);
-    for(let x=-12;x<13;x+=2.6)box(x,1.59,0,1.35,.04,.08,colors.yellow);
-    // Structural opening and visible passage under the raised deck at x=0.
-    box(-2.1,.72,0,.55,1.35,3.9,colors.stone);
-    box(2.1,.72,0,.55,1.35,3.9,colors.stone);
-    box(0,1.14,0,3.7,.37,4.0,colors.stone);
-    box(0,.03,0,1.8,.06,8.2,colors.soil);
-    // Dark back wall of the arched-looking, three-dimensional underpass.
-    if(state.under){
-      for(const z of [-2.05,2.05]){
-        box(-1.23,.65,z,.24,1.3,.25,colors.stone);
-        box(1.23,.65,z,.24,1.3,.25,colors.stone);
-        box(0,1.25,z,2.7,.27,.27,colors.stone);
-      }
-      box(0,.05,0,1.95,.07,8.5,colors.grass2);
+    if(!state.under){
+      // Existing road is at grade. No tunnel or bridge exists yet.
+      roadSlab(0,27,ROAD_LOW);
+      state.geometry.bridge=false;
+      state.geometry.portal=false;
+      state.geometry.roadSurfaceAtCenter=ROAD_LOW;
+      return;
     }
+    // The selected fauna underpass adds a short bridge, with tapered approaches.
+    // Only the centre crossing is raised; the remainder stays at ground level.
+    const rampLength=RAMP_END-BRIDGE_HALF;
+    const grade=Math.atan((ROAD_HIGH-ROAD_LOW)/rampLength);
+    roadSlab(-9.5,8,ROAD_LOW);
+    roadSlab(9.5,8,ROAD_LOW);
+    roadSlab(-(RAMP_END+BRIDGE_HALF)/2,rampLength,(ROAD_LOW+ROAD_HIGH)/2,grade);
+    roadSlab((RAMP_END+BRIDGE_HALF)/2,rampLength,(ROAD_LOW+ROAD_HIGH)/2,-grade);
+    roadSlab(0,2*BRIDGE_HALF,ROAD_HIGH);
+    // A real open 3D portal and floor run perpendicular to the roadway.
+    // Side supports stay outside the animals' central walking corridor.
+    box(-1.27,.44,0,.27,.84,3.90,colors.stone);
+    box(1.27,.44,0,.27,.84,3.90,colors.stone);
+    box(0,.90,0,2.55,.16,3.90,colors.stone);
+    box(0,.025,0,2.15,.05,9.0,colors.grass2);
+    for(const z of [-2.02,2.02]){
+      box(-1.27,.55,z,.32,1.04,.28,colors.stone);
+      box(1.27,.55,z,.32,1.04,.28,colors.stone);
+      box(0,.99,z,2.55,.16,.28,colors.stone);
+    }
+    state.geometry.bridge=true;
+    state.geometry.portal=true;
+    state.geometry.roadSurfaceAtCenter=ROAD_HIGH;
   }
   function fence(){
-    if(!state.fence)return;
+    if(!state.fence){
+      state.geometry.corridorOpen=false;
+      state.geometry.fenceBlocked=false;
+      return;
+    }
+    // Roadside exclusion fence is parallel to the road on BOTH verges.
+    // When the underpass is selected, open precisely the entrance spans.
+    // Before that, maintain a full exclusion barrier rather than an unsafe gap.
     for(const z of [-2.45,2.45]){
-      for(let x=-12;x<=12;x+=1.2)post(x,.58,z,.055,1.15,colors.post);
-      box(0,.83,z,25,.055,.06,colors.fence);
-      box(0,.43,z,25,.045,.055,colors.fence);
+      if(state.under){
+        for(const [from,to] of [[-12.5,-1.55],[1.55,12.5]]){
+          for(let x=from;x<=to+.02;x+=1.05)
+            post(x,.51,z,.055,1.02,colors.post);
+          box((from+to)/2,.70,z,to-from,.055,.06,colors.fence);
+          box((from+to)/2,.34,z,to-from,.055,.06,colors.fence);
+        }
+      }else{
+        for(let x=-12.5;x<=12.5;x+=1.05)
+          post(x,.51,z,.055,1.02,colors.post);
+        box(0,.70,z,25,.055,.06,colors.fence);
+        box(0,.34,z,25,.055,.06,colors.fence);
+      }
     }
-    // Guidance returns, leaving the underpass opening accessible.
-    for(const x of [-1.7,1.7]){
-      for(let z=-3.4;z<=3.4;z+=.8)post(x,.48,z,.04,.95,colors.post);
-      box(x,.85,0,.06,.045,7.0,colors.fence);
+    // The parallel corridor's guide fencing is only on its sides.
+    // Crucially, NO fence rail crosses z=+/-2.45 or the tunnel centre.
+    if(state.under){
+      for(const x of [-1.30,1.30]){
+        for(const [from,to] of [[-5,-2.45],[2.45,5]]){
+          for(let z=from;z<=to+.02;z+=.65)
+            post(x,.45,z,.045,.90,colors.post);
+          box(x,.70,(from+to)/2,.055,.05,to-from,colors.fence);
+          box(x,.35,(from+to)/2,.055,.05,to-from,colors.fence);
+        }
+      }
     }
+    state.geometry.corridorOpen=state.under;
+    state.geometry.fenceBlocked=!state.under;
   }
   function vehicle(x,z,color){
-    box(x,1.92,z,1.65,.40,.82,color);
-    box(x-.1,2.28,z,.98,.34,.71,color);
-    box(x-.10,2.33,z,.82,.23,.73,colors.window);
+    const surface=roadHeightAt(x),body=surface+.42,wheel=surface+.18;
+    box(x,body,z,1.65,.40,.82,color);
+    box(x-.1,body+.36,z,.98,.34,.71,color);
+    box(x-.1,body+.41,z,.82,.23,.73,colors.window);
     for(const dx of [-.54,.54])for(const dz of [-.44,.44])
-      ball(x+dx,1.74,z+dz,.19,.19,.12,colors.tire);
-    box(x+.84,1.97,z,.08,.13,.55,colors.white);
-    box(x-.85,1.97,z,.07,.13,.55,colors.car2);
+      ball(x+dx,wheel,z+dz,.19,.19,.12,colors.tire);
+    box(x+.84,body+.05,z,.08,.13,.55,colors.white);
+    box(x-.85,body+.05,z,.07,.13,.55,colors.car2);
   }
   function koala(x,z,scale=1){
-    const y=.42,greys=colors;
+    const y=.24,greys=colors;
     ball(x,y,z,.40*scale,.35*scale,.36*scale,greys.koala);
     ball(x,y+.39*scale,z+.19*scale,.31*scale,.30*scale,.28*scale,greys.koalaLight);
     for(const side of [-1,1]){
@@ -283,8 +343,9 @@
     }
     const crossing=state.phase==='crossing'||state.phase==='celebrating';
     const progress=crossing?(state.phase==='celebrating'?1:clamp((performance.now()-state.crossStarted)/5500,0,1)):0;
-    koala(-.45,4.25-progress*8.1,1.0);
-    koala(.65,5.45-progress*8.1,.67);
+    // Walk through the actual open portal along Z, not across either fence rail.
+    koala(-.38,4.25-progress*8.1,.70);
+    koala(.49,5.00-progress*8.1,.55);
     state.frames++;
   }
   function sync(values){
