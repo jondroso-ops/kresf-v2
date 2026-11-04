@@ -38,6 +38,31 @@ try {
   assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
   console.log('PASS local classroom progress persists after reload');
 
+  // Photo is captured in the report and persists only in IndexedDB on this device.
+  await page.locator('.nav-btn').nth(1).click();
+  await page.locator('#rep-photo').setInputFiles({
+    name:'koala-classroom-test.png',
+    mimeType:'image/png',
+    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9G7hQAAAAASUVORK5CYII=', 'base64')
+  });
+  assert.equal(await page.locator('#rep-photo-preview').isVisible(), true);
+  await page.locator('button[onclick="submitReport()"]').click();
+  await page.locator('button:text("⬇ Save photo to phone")').waitFor();
+  const thumb=page.locator('img[alt="Saved observation photo"]');
+  await thumb.waitFor();
+  await page.waitForFunction(()=>document.querySelector('img[alt="Saved observation photo"]')?.getAttribute('src')?.startsWith('blob:'));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.nav-btn').nth(3).click();
+  await page.locator('button:text("⬇ Save photo to phone")').waitFor();
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('button:text("⬇ Save photo to phone")').click();
+  const download=await downloadPromise;
+  assert.match(download.suggestedFilename(),/kresf-observation-.*\.png$/);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('button:text("Remove saved photo")').click();
+  await page.locator('button:text("Remove saved photo")').waitFor({state:'detached'});
+  console.log('PASS photo saved to IndexedDB, persists after reload, downloads and can be deleted');
+
   // The local app shell is precached by the app-scoped service worker.
   await page.waitForFunction(() => 'serviceWorker' in navigator && !!navigator.serviceWorker.controller, {timeout:20000});
   await context.setOffline(true);
