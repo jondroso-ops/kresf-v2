@@ -43,7 +43,7 @@ check('core educational features remain',()=>{
 });
 check('classroom demonstration works without a GPS fix',()=>{ 
   assert.match(app,/id="rep-demo" checked/);
-  assert.match(app,/const demo = document\.getElementById\('rep-demo'\)\.checked/);
+  assert.match(app,/const demo\s*=\s*document\.getElementById\('rep-demo'\)\.checked/);
   assert.match(app,/Classroom demo — no location/);
 });
 check('simulator resets after pause even with no GPS',()=>{
