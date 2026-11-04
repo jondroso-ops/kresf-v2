@@ -17,6 +17,8 @@ jobs:
         run: node tests/smoke.test.mjs
       - name: Scan source and workflow security invariants
         run: node tests/security.test.mjs
+      - name: Check legacy cache migration isolation
+        run: node tests/stage1-cache.test.mjs
   browser:
     needs: smoke
     runs-on: ubuntu-24.04
