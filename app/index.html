@@ -199,6 +199,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         <span>🚗</span><span id="sim-btn-text">Simulate</span>
                     </button>
                     <button id="btn-gps-init" onclick="startGPS()" aria-label="Enable optional GPS" title="Enable optional GPS" class="bg-slate-800 text-slate-100 px-3 py-2 rounded-xl border border-slate-600 text-xs">📍 GPS</button>
+                    <button id="btn-gps-stop" onclick="stopGPS()" aria-label="Stop GPS monitoring" title="Stop GPS monitoring" class="hidden bg-amber-800 text-white px-3 py-2 rounded-xl border border-amber-600 text-xs">Stop GPS</button>
                     <button id="btn-audio-init" onclick="initAudioEngine()" aria-label="Enable audio for classroom simulation" title="Enable demo voice and beeps" class="bg-slate-800 text-amber-400 p-2.5 rounded-xl border border-slate-600 active:scale-95">🔊</button>
                 </div>
             </div>
@@ -250,7 +251,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         </select>
                     </div>
                     <label class="flex items-start gap-2 text-xs text-slate-200"><input type="checkbox" id="rep-demo" checked class="mt-0.5 w-4 h-4 accent-brand-primary">Classroom demonstration record (no GPS required). Uncheck to log an observation with a real GPS fix.</label>
-                    <div><label for="rep-photo" class="block text-xs font-semibold text-slate-300 mb-1">Optional observation photo (saved privately on this device)</label><input id="rep-photo" type="file" accept="image/*" capture="environment" onchange="previewPhoto(this)" class="block w-full text-xs text-slate-300"><img id="rep-photo-preview" alt="Photo preview" class="hidden max-h-32 mt-2 rounded-lg" /><button type="button" onclick="clearPhoto()" class="text-xs underline text-slate-300 mt-2">Clear photo</button><p class="text-[10px] text-slate-400">After Log Sighting, the selected photo is stored in this browser on this device. Use “Save photo to phone” on the Guardian Profile to download a copy. Clearing browser data or uninstalling may erase it. Photos are never uploaded to KRESF or sent to rescuers.</p></div>
+                    <div><label for="rep-photo" class="block text-xs font-semibold text-slate-300 mb-1">Optional observation photo (saved privately on this device)</label><input id="rep-photo" type="file" accept="image/*" capture="environment" onchange="previewPhoto(this)" class="block w-full text-xs text-slate-300"><img id="rep-photo-preview" alt="Photo preview" class="hidden max-h-32 mt-2 rounded-lg" /><button type="button" onclick="clearPhoto()" class="text-xs underline text-slate-300 mt-2">Clear photo</button><p class="text-[10px] text-slate-400">After Log Sighting, the selected photo is stored in this browser on this device. Use “Save photo to phone” on the Guardian Profile to download a copy. Clearing browser data or uninstalling may erase it. Photos are never uploaded to KRESF or sent to rescuers. New photos are re-encoded to remove embedded camera/location metadata where the browser supports decoding; unsupported image formats are rejected. Existing saved photos are not automatically rewritten. Browser storage may be accessible to other pages on this GitHub Pages origin.</p></div>
                     <button onclick="submitReport()" class="w-full bg-brand-primary text-slate-950 font-black py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-transform">
                         LOG SIGHTING (+50 XP)
                     </button>
@@ -517,24 +518,50 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         }
 
         // Location permissions are requested only after an explicit user gesture.
+        const MAX_GPS_AGE_MS = 30000;
+        const MAX_GPS_ACCURACY_M = 100;
+        function stopGPS() {
+            if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+            gpsWatchId=null;realGPS=null;hasGPSFix=false;
+            document.getElementById('gps-text').innerText='GPS OFF';
+            document.getElementById('gps-dot').className='w-2 h-2 rounded-full bg-slate-400';
+            document.getElementById('btn-gps-stop').classList.add('hidden');
+            document.getElementById('rep-coords').value='';
+            if (!isSimulating) {
+                currentLat=activeTarget.lat-0.015;currentLng=activeTarget.lng;
+                if(userMarker)userMarker.setLatLng([currentLat,currentLng]);
+                evaluateRisk(currentLat,currentLng);
+            }
+        }
         function startGPS() {
             if (!('geolocation' in navigator)) { toast('GPS is unavailable on this device'); return; }
             if (gpsWatchId !== null) { toast('GPS monitoring already enabled'); return; }
             document.getElementById('gps-text').innerText='LOCATING';
-            gpsWatchId = navigator.geolocation.watchPosition(pos => {
-                realGPS={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,timestamp:pos.timestamp};
+            const watch=navigator.geolocation.watchPosition(pos => {
+                const age=Date.now()-pos.timestamp;
+                const accuracy=pos.coords.accuracy;
+                if (!Number.isFinite(age) || age < -5000 || age > MAX_GPS_AGE_MS
+                    || !Number.isFinite(accuracy) || accuracy > MAX_GPS_ACCURACY_M) {
+                    realGPS=null;hasGPSFix=false;
+                    document.getElementById('gps-text').innerText='GPS STALE / LOW ACCURACY';
+                    document.getElementById('rep-coords').value='';
+                    return;
+                }
+                realGPS={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy,timestamp:pos.timestamp};
                 hasGPSFix=true;
                 document.getElementById('gps-dot').className='w-2 h-2 rounded-full bg-brand-primary';
-                document.getElementById('gps-text').innerText='GPS ±'+Math.round(pos.coords.accuracy)+'m';
+                document.getElementById('gps-text').innerText='GPS ±'+Math.round(accuracy)+'m';
                 if(isSimulating)return;
                 currentLat=realGPS.lat;currentLng=realGPS.lng;
                 if(userMarker)userMarker.setLatLng([currentLat,currentLng]);
                 evaluateRisk(currentLat,currentLng);
             },error=>{
+                stopGPS();
                 document.getElementById('gps-text').innerText=error.code===1?'GPS DENIED':'GPS UNAVAILABLE';
-                if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
                 toast('Location not available; demo mode continues');
-            },{enableHighAccuracy:true,maximumAge:30000,timeout:15000});
+            },{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+            gpsWatchId=watch;
+            document.getElementById('btn-gps-stop').classList.remove('hidden');
         }
 
         function jumpToCorridor(key) {
@@ -798,6 +825,25 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 tx.onerror=()=>reject(tx.error || Error('Cannot delete photo'));
             });
         }
+        async function removePhotoMetadata(file) {
+            // Re-encode pixels, not original bytes: drops EXIF/GPS and other metadata.
+            if (!validPhoto(file)) throw Error('Unsupported photo type or size');
+            let bitmap=null;
+            try {
+                bitmap=await createImageBitmap(file);
+                const maxDimension=2048, scale=Math.min(1,maxDimension/Math.max(bitmap.width,bitmap.height));
+                const canvas=document.createElement('canvas');
+                canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+                canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+                canvas.getContext('2d',{alpha:true}).drawImage(bitmap,0,0,canvas.width,canvas.height);
+                const clean=await new Promise((resolve,reject)=>canvas.toBlob(
+                    blob=>blob?resolve(blob):reject(Error('Unable to encode image')),'image/png'));
+                if(clean.size>maxPhotoSize)throw Error('Processed photo exceeds 5 MB');
+                return clean;
+            }catch(error){
+                throw Error('Photo cannot be decoded or made metadata-safe on this device: '+error.message);
+            }finally{bitmap?.close?.();}
+        }
         function validPhoto(file) {
             return file && ['image/jpeg','image/png','image/webp','image/gif','image/heic','image/heif'].includes(file.type)
                && file.size > 0 && file.size <= maxPhotoSize;
@@ -876,13 +922,14 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             if(file) record.photoId=id;
             try {
                 const nextXP=userXP+50;
-                await transactObservation(record,file || null,nextXP);
+                const cleanPhoto=file?await removePhotoMetadata(file):null;
+                await transactObservation(record,cleanPhoto,nextXP);
                 // Never change in-memory history, award points or erase inputs before commit.
                 sightingsLog.unshift(record);
                 userXP=nextXP;
                 document.getElementById('rep-coords').value='';
                 clearPhoto();
-                toast(file?'Sighting and photo saved privately on this device! +50 XP':'Local classroom observation saved! +50 XP');
+                toast(file?'Sighting and metadata-stripped photo saved privately on this device! +50 XP':'Local classroom observation saved! +50 XP');
                 switchView('profile',document.querySelectorAll('.nav-btn')[3]);
             } catch(error) {
                 toast('NOT SAVED. Keep your report and photo selected. Storage error: '+(error.message||'unknown'));
@@ -1002,14 +1049,64 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             renderHabitatStory();
         }
 
+        async function deleteObservation(record) {
+            if(!confirm('Delete this observation and any attached photo from this browser?'))return;
+            try{
+                const db=await openPhotoDb();
+                await new Promise((resolve,reject)=>{
+                    const tx=db.transaction(['observations','photos'],'readwrite');
+                    tx.objectStore('observations').delete(record.id);
+                    if(record.photoId)tx.objectStore('photos').delete(record.photoId);
+                    tx.oncomplete=resolve;
+                    tx.onerror=()=>reject(tx.error||Error('Deletion failed'));
+                    tx.onabort=()=>reject(tx.error||Error('Deletion aborted'));
+                });
+                sightingsLog=sightingsLog.filter(l=>l.id!==record.id);
+                // Remove legacy record to prevent reimport in a fresh installation.
+                try {localStorage.removeItem('kresf_logs');} catch(e) {toast('Deleted from app. Legacy browser copy could not be removed.');}
+                updateProfileUI();
+                toast('Observation and attached photo deleted');
+            }catch(error){toast('Deletion failed: '+error.message);}
+        }
+        async function clearAllObservations() {
+            if(!confirm('Delete ALL local observations, photos and XP from this browser? This cannot be undone.'))return;
+            try{
+                const db=await openPhotoDb();
+                await new Promise((resolve,reject)=>{
+                    const tx=db.transaction(['observations','photos','metadata'],'readwrite');
+                    tx.objectStore('observations').clear();
+                    tx.objectStore('photos').clear();
+                    tx.objectStore('metadata').put(0,'xp');
+                    tx.oncomplete=resolve;
+                    tx.onerror=()=>reject(tx.error||Error('Clear failed'));
+                    tx.onabort=()=>reject(tx.error||Error('Clear aborted'));
+                });
+                for(const key of ['kresf_logs','kresf_xp']) {
+                    try{localStorage.removeItem(key);}catch(error){console.warn('Legacy storage cleanup failed',error);}
+                }
+                sightingsLog=[];userXP=0;updateProfileUI();
+                toast('All KRESF observations, photos and XP removed from this browser');
+            }catch(error){toast('Clear failed: '+error.message);}
+        }
         function updateProfileUI() {
             document.getElementById('prof-xp').innerText = `${userXP} XP`;
             const badges = [ ["🌱 First Observation", sightingsLog.length >= 1],["🦘 Field Researcher", sightingsLog.length >= 3],["🔬 R&D Explorer", userXP >= 250] ];
             document.getElementById("badge-grid").replaceChildren(...badges.map(([name,earned])=>{const el=document.createElement("span");el.className="rounded-lg px-2 py-1 border "+(earned?"text-emerald-200 border-emerald-700 bg-emerald-900/50":"text-slate-400 border-slate-700");el.textContent=(earned?"✓ ":"🔒 ")+name;return el;}));
             const container = document.getElementById('logs-list-container');
             container.innerHTML = '';
+            const actions=document.createElement('div');
+            actions.className='flex flex-wrap gap-2 mb-3';
+            const clear=document.createElement('button');
+            clear.type='button';clear.textContent='Delete all local observations and photos';
+            clear.className='text-xs bg-red-900 border border-red-700 text-white rounded-lg px-3 py-2';
+            clear.onclick=clearAllObservations;
+            actions.append(clear);
+            container.append(actions);
             if (!sightingsLog.length) {
-                container.innerHTML = '<p class="text-slate-500 text-center italic text-[11px]">No sightings yet.</p>';
+                const empty=document.createElement('p');
+                empty.className='text-slate-500 text-center italic text-[11px]';
+                empty.textContent='No sightings yet.';
+                container.append(empty);
                 return;
             }
             sightingsLog.forEach(l => {
@@ -1019,6 +1116,11 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 const b = document.createElement('p'); b.className = 'text-[10px] text-slate-400 font-mono'; b.textContent = `${l.coords} • ${l.time}`;
                 row.append(a, b); container.appendChild(row);
                 if (l.photoId) addPhotoControls(row, l);
+                const remove=document.createElement('button');
+                remove.type='button';remove.textContent='Delete observation';
+                remove.className='mt-2 text-xs underline text-rose-300';
+                remove.onclick=()=>deleteObservation(l);
+                row.append(remove);
             });
         }
 
