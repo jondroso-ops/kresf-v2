@@ -75,4 +75,12 @@ check('audio limited to user-started 300m demonstration',()=>{
   assert.match(app,/zoneBeepTimer = setInterval/);
   assert.match(app,/10000\)/);
 });
+check('private photo storage and owner approval requirements',()=>{
+  assert.match(app,/indexedDB\.open\(PHOTO_DB_NAME, 1\)/);
+  assert.match(app,/await saveLocalPhoto\(id,file\)/);
+  assert.match(app,/function addPhotoControls\(row, record\)/);
+  assert.match(app,/Save photo to phone/);
+  assert.match(app,/Remove saved photo/);
+  assert.ok(fs.readFileSync('.github/CODEOWNERS','utf8').includes('* @jondroso-ops'));
+});
 console.log('All KRESF static smoke checks passed. Browser/device validation remains necessary.');
