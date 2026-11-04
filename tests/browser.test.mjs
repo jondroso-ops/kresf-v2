@@ -165,6 +165,52 @@ try {
     assert.equal(await damagedPage.locator('#habitat-start').isEnabled(),true);
     assert.deepEqual(damagedErrors,[]);
     console.log('PASS malformed legacy state does not interrupt PWA modules');
+    // Existing v2 records and photo bytes must survive IndexedDB v1 -> v2 upgrade.
+    const upgradeContext=await browser.newContext();
+    const upgradePage=await upgradeContext.newPage();
+    try {
+      await upgradePage.goto(base,{waitUntil:'domcontentloaded'});
+      await upgradePage.evaluate(async()=>{
+        localStorage.setItem('kresf_logs',JSON.stringify([{
+          id:'legacy-photo-1',coords:'Classroom demo — no location',
+          status:'Koala sighting',time:'04/11/2026 12:00',demo:true,photoId:'legacy-photo-1'
+        }]));
+        localStorage.setItem('kresf_xp',JSON.stringify(50));
+        await new Promise((resolve,reject)=>{
+          const req=indexedDB.open('kresf-local-photos-v1',1);
+          req.onupgradeneeded=()=>req.result.createObjectStore('photos');
+          req.onerror=()=>reject(req.error);
+          req.onsuccess=()=>{
+            const db=req.result;
+            const tx=db.transaction('photos','readwrite');
+            tx.objectStore('photos').put(new Blob(['old-photo'],{type:'image/png'}),'legacy-photo-1');
+            tx.oncomplete=()=>{db.close();resolve();};
+            tx.onerror=()=>reject(tx.error);
+          };
+        });
+      });
+      await upgradePage.route(/(cdn\\.tailwindcss\\.com|unpkg\\.com|cdn\\.jsdelivr\\.net)/,route=>route.abort());
+      await upgradePage.goto(new URL('app/',base).href,{waitUntil:'domcontentloaded'});
+      await upgradePage.waitForFunction(()=>storageReady);
+      await upgradePage.locator('.nav-btn').nth(3).click();
+      assert.equal(await upgradePage.locator('#prof-xp').innerText(),'50 XP');
+      assert.match(await upgradePage.locator('#logs-list-container').innerText(),/Koala sighting/);
+      assert.equal(await upgradePage.locator('button:text("⬇ Save photo to phone")').count(),1);
+      const migrated=await upgradePage.evaluate(async()=>{
+        const db=await openPhotoDb();
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction(['observations','photos'],'readonly');
+          const observation=tx.objectStore('observations').get('legacy-photo-1');
+          const photo=tx.objectStore('photos').get('legacy-photo-1');
+          tx.oncomplete=()=>resolve({record:observation.result,photoSize:photo.result?.size});
+          tx.onerror=()=>reject(tx.error);
+        });
+      });
+      assert.equal(migrated.record.photoId,'legacy-photo-1');
+      assert.equal(migrated.photoSize,9);
+      console.log('PASS existing photo and observation survive v1 to v2 database migration');
+    } finally {await upgradeContext.close();}
+
   }finally{await damagedContext.close();}
 
 } finally {
