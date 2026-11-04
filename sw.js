@@ -2,7 +2,9 @@
 self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
 self.addEventListener('activate', event => event.waitUntil((async () => {
   const names = await caches.keys();
-  await Promise.all(names.filter(name => name.startsWith('kresf-')).map(name => caches.delete(name)));
+  // Delete only known pre-v3 ROOT caches; never erase the /app/ worker's caches.
+  const legacyRootCaches = new Set(['kresf-shell-v1','kresf-shell-v2','kresf-v1-shell','kresf-v2-shell','kresf-cache-v1']);
+  await Promise.all(names.filter(name => legacyRootCaches.has(name)).map(name => caches.delete(name)));
   await self.clients.claim();
 })()));
 self.addEventListener('fetch', event => {
