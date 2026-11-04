@@ -64,6 +64,12 @@ try {
   await page.locator('button:text("Remove saved photo")').waitFor({state:'detached'});
   console.log('PASS photo saved to IndexedDB, persists after reload, downloads and can be deleted');
 
+  // Stage 2: a saved observation can be individually deleted.
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('button:text("Delete observation")').last().click();
+  await page.waitForFunction(()=>document.querySelector('#logs-list-container')?.querySelectorAll('button')?.length < 4);
+  console.log('PASS individual observation deletion available');
+  
   // The local app shell is precached by the app-scoped service worker.
   await page.waitForFunction(() => 'serviceWorker' in navigator && !!navigator.serviceWorker.controller, {timeout:20000});
   await context.setOffline(true);
