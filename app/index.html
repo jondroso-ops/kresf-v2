@@ -636,6 +636,10 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
+        // Shared classroom-only radius predicate for HUD and simulation audio.
+        function insideDemoZone(distanceMetres) {
+            return Number.isFinite(distanceMetres) && distanceMetres <= dangerRadius();
+        }
         function evaluateRisk(uLat, uLng) {
             const dist = calculateDistance(uLat, uLng, activeTarget.lat, activeTarget.lng);
             const radius = dangerRadius();
@@ -645,10 +649,10 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             bar.style.width = `${Math.max(0, Math.min(100, 100 - (dist/1500*100)))}%`;
             const distEl = document.getElementById('hud-distance'), card = document.getElementById('hud-card');
 
-            if (dist <= radius) {
+            if (insideDemoZone(dist)) {
                 bar.className = "bg-brand-danger h-full transition-all";
                 distEl.className = "text-2xl font-black text-brand-danger font-mono";
-                document.getElementById('hud-status-desc').innerText = `⚠️ SIMULATED AREA (<${radius} m) — not a live warning`;
+                document.getElementById('hud-status-desc').innerText = `⚠️ SIMULATED AREA (≤${radius} m) — not a live warning`;
                 if (!isDangerActive) { isDangerActive = true; if (isSimulating) card.classList.add('hud-alert-active'); }
             } else {
                 bar.className = "bg-brand-primary h-full transition-all";
@@ -722,7 +726,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         }
         function updateZoneAudio(distanceMetres) {
             if (!isSimulating) return;
-            const inside = distanceMetres < 300;
+            const inside = insideDemoZone(distanceMetres);
             if (inside && !demoZoneInside) {
                 demoZoneInside = true;
                 speakDemo('Be careful, koala zone ahead');
@@ -736,16 +740,25 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 speakDemo('Thank you, you have left koalas zone');
             }
         }
-        function initAudioEngine() {
+        let audioUnlockPending = false;
+        async function initAudioEngine() {
+            if(audioUnlockPending)return;
+            audioUnlockPending=true;
+            isAudioUnlocked=false;
             try {
                 const Ctx = window.AudioContext || window.webkitAudioContext;
                 if (!Ctx) throw Error('Web Audio not supported');
-                if (!audioCtx) audioCtx = new Ctx();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                isAudioUnlocked = true;
+                if (!audioCtx || audioCtx.state==='closed') audioCtx = new Ctx();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                if(audioCtx.state!=='running')throw Error('Browser audio is not running');
+                isAudioUnlocked=true;
                 document.getElementById('btn-audio-init').className = "bg-brand-primary text-slate-950 p-2.5 rounded-xl font-bold";
                 toast('Simulation sound enabled. Voice works only in simulated mode.');
-            } catch (_) { toast('Audio unavailable on this device'); }
+            } catch(error) {
+                isAudioUnlocked=false;
+                document.getElementById('btn-audio-init').className = "bg-slate-800 text-amber-400 p-2.5 rounded-xl border border-slate-600 active:scale-95";
+                toast('Audio unavailable: '+(error?.message||'this device'));
+            } finally {audioUnlockPending=false;}
         }
 
         // Real GPS only: the field stays empty until the device gives a position
