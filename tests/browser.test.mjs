@@ -44,7 +44,7 @@ try {
   await page.locator('#rep-photo').setInputFiles({
     name:'koala-classroom-test.png',
     mimeType:'image/png',
-    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9G7hQAAAAASUVORK5CYII=', 'base64')
+    buffer:Buffer.concat([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGOUqPJlYGBgYmBgYGBgAAAKaQDj+IylJQAAAABJRU5ErkJggg==', 'base64'),Buffer.from('GPS_EXIF_TEST_MARKER')])
   });
   await page.locator('#rep-photo-preview').waitFor({state:'visible',timeout:5000});
   await page.locator('button[onclick="submitReport()"]').click();
@@ -52,6 +52,26 @@ try {
   const thumb=page.locator('img[alt="Saved observation photo"]');
   await thumb.waitFor();
   await page.waitForFunction(()=>document.querySelector('img[alt="Saved observation photo"]')?.getAttribute('src')?.startsWith('blob:'));
+  // The original synthetic photo contains a test-only metadata marker.
+  // The persisted canvas re-encode must not retain its original bytes.
+  const sanitised=await page.evaluate(async()=>{
+    const db=await openPhotoDb();
+    const id=sightingsLog[0]?.photoId;
+    return new Promise((resolve,reject)=>{
+      const req=db.transaction('photos','readonly').objectStore('photos').get(id);
+      req.onsuccess=async()=>{
+        if(!req.result)return reject(Error('Missing sanitised photo'));
+        const bytes=new Uint8Array(await req.result.arrayBuffer());
+        const marker=new TextEncoder().encode('GPS_EXIF_TEST_MARKER');
+        const found=bytes.some((_,i)=>marker.every((value,j)=>bytes[i+j]===value));
+        resolve({mime:req.result.type,containsOriginalMarker:found});
+      };
+      req.onerror=()=>reject(req.error);
+    });
+  });
+  assert.deepEqual(sanitised,{mime:'image/png',containsOriginalMarker:false});
+  console.log('PASS new saved photos discard synthetic camera metadata');
+
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('.nav-btn').nth(3).click();
   await page.locator('button:text("⬇ Save photo to phone")').waitFor();
@@ -64,6 +84,12 @@ try {
   await page.locator('button:text("Remove saved photo")').waitFor({state:'detached'});
   console.log('PASS photo saved to IndexedDB, persists after reload, downloads and can be deleted');
 
+  // Stage 2: a saved observation can be individually deleted.
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('button:text("Delete observation")').last().click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('#logs-list-container button')].filter(b=>b.textContent==='Delete observation').length===1);
+  console.log('PASS individual observation deletion available');
+  
   // The local app shell is precached by the app-scoped service worker.
   await page.waitForFunction(() => 'serviceWorker' in navigator && !!navigator.serviceWorker.controller, {timeout:20000});
   await context.setOffline(true);
@@ -114,6 +140,51 @@ try {
 
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
+  // Stage 2: GPS must be explicitly stoppable and must reject stale fixes.
+  const gpsState=await page.evaluate(()=>{
+    const oldGeo=Object.getOwnPropertyDescriptor(navigator,'geolocation');
+    let success,fail,cleared=null;
+    Object.defineProperty(navigator,'geolocation',{configurable:true,value:{
+      watchPosition(ok,bad){success=ok;fail=bad;return 42;},
+      clearWatch(id){cleared=id;}
+    }});
+    try{
+      startGPS();
+      success({coords:{latitude:-34.2,longitude:150.7,accuracy:12},timestamp:Date.now()-60000});
+      const staleRejected=!hasGPSFix && realGPS===null;
+      success({coords:{latitude:-34.2,longitude:150.7,accuracy:10},timestamp:Date.now()});
+      const goodAccepted=hasGPSFix;
+      fail({code:1});
+      const errorClears=!hasGPSFix && realGPS===null && gpsWatchId===null;
+      startGPS();stopGPS();
+      return {staleRejected,goodAccepted,errorClears,stopClears:!hasGPSFix&&realGPS===null&&gpsWatchId===null,cleared};
+    }finally{
+      if(oldGeo)Object.defineProperty(navigator,'geolocation',oldGeo);
+      else delete navigator.geolocation;
+    }
+  });
+  assert.deepEqual(gpsState,{staleRejected:true,goodAccepted:true,errorClears:true,stopClears:true,cleared:42});
+  console.log('PASS GPS explicit stop and stale/error invalidation');
+  // Stage 2: wipe all local observations, XP and images on explicit confirmation.
+  await page.locator('.nav-btn').nth(3).click();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('button:text("Delete all local observations and photos")').click();
+  await page.waitForFunction(()=>document.querySelector('#prof-xp')?.innerText==='0 XP');
+  assert.match(await page.locator('#logs-list-container').innerText(),/No sightings yet/);
+  const emptied=await page.evaluate(async()=>{
+    const db=await openPhotoDb();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(['observations','photos'],'readonly');
+      const observations=tx.objectStore('observations').count();
+      const photos=tx.objectStore('photos').count();
+      tx.oncomplete=()=>resolve({observations:observations.result,photos:photos.result});
+      tx.onerror=()=>reject(tx.error);
+    });
+  });
+  assert.deepEqual(emptied,{observations:0,photos:0});
+  console.log('PASS clear-all removes stored observations, photos and XP');
+
+
   // Stage 1: reject failed persistence without clearing inputs or awarding XP.
   const failureContext=await browser.newContext({viewport:{width:390,height:844}});
   const failurePage=await failureContext.newPage();
