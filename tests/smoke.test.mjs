@@ -87,7 +87,7 @@ check('stage 1 atomic data and migration gate',()=>{
   assert.match(app,/db\.transaction\(\['observations','photos','metadata'\],'readwrite'\)/);
   assert.match(app,/tx\.oncomplete=\(\)=>\{completed=true;resolve\(\);\}/);
   assert.match(app,/function validateObservations\(value\)/);
-  assert.match(app,/await transactObservation\(record,file \|\| null,nextXP\)/);
+  assert.match(app,/await transactObservation\(record,cleanPhoto,nextXP\)/);
   const legacyWorker=fs.readFileSync('sw.js','utf8');
   assert.doesNotMatch(legacyWorker,/name\.startsWith\('kresf-'\)/);
   assert.match(legacyWorker,/legacyRootCaches\.has\(name\)/);
