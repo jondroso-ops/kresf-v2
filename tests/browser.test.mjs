@@ -69,8 +69,8 @@ try {
   await page.reload({waitUntil:'domcontentloaded'});
   assert.match(await page.locator('#network-badge').innerText(),/OFFLINE/);
   await page.locator('.nav-btn').nth(3).click();
-  assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
-  console.log('PASS cached PWA shell reopens offline with local data intact');
+  assert.equal(await page.locator('#prof-xp').innerText(),'100 XP');
+  console.log('PASS cached PWA shell reopens offline with two saved classroom records intact');
   await context.setOffline(false);
   // Guided Habitat Lab: choices drive visible story phases, crossing, celebration and reset.
   await page.locator('.nav-btn').nth(2).click();
