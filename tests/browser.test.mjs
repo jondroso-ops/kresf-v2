@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
 const base=process.env.KRESF_BASE_URL || 'http://127.0.0.1:8765/';
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
 const page=await context.newPage();
 const errors=[];
@@ -112,7 +112,33 @@ try {
   const start=page.locator('#habitat-start');
   const camera=page.locator('#habitat-camera');
   assert.equal(await start.isEnabled(),true);
-  assert.match(await page.locator('#habitat-view-label').innerText(),/Perspective/);
+  await page.waitForFunction(()=>window.KresfHabitat3D?.state.ready===true,{timeout:12000});
+  assert.match(await page.locator('#habitat-view-label').innerText(),/Interactive 3D/);
+  await page.waitForFunction(()=>window.KresfHabitat3D.state.frames>3,{timeout:12000});
+  const webglCheck=await page.evaluate(()=>{
+    const canvas=document.getElementById('habitat-webgl');
+    const gl=canvas.getContext('webgl');
+    return {supported:!!gl,active:window.KresfHabitat3D.state.active,
+      version:gl?.getParameter(gl.VERSION)||'',width:canvas.width,height:canvas.height,
+      frames:window.KresfHabitat3D.state.frames};
+  });
+  assert.equal(webglCheck.supported,true);
+  assert.equal(webglCheck.active,true);
+  assert.match(webglCheck.version,/WebGL/);
+  assert.ok(webglCheck.width>100 && webglCheck.height>80 && webglCheck.frames>3);
+  const beforeYaw=await page.evaluate(()=>window.KresfHabitat3D.state.yaw);
+  const canvasBounds=await page.locator('#habitat-webgl').boundingBox();
+  assert.ok(canvasBounds,'3D canvas must be visible');
+  await page.mouse.move(canvasBounds.x+canvasBounds.width*.38,canvasBounds.y+canvasBounds.height*.68);
+  await page.mouse.down();
+  await page.mouse.move(canvasBounds.x+canvasBounds.width*.68,canvasBounds.y+canvasBounds.height*.68,{steps:6});
+  await page.mouse.up();
+  const afterYaw=await page.evaluate(()=>window.KresfHabitat3D.state.yaw);
+  assert.ok(Math.abs(afterYaw-beforeYaw)>.1,'Dragging should rotate the real 3D camera');
+  const beforeZoom=await page.evaluate(()=>window.KresfHabitat3D.state.radius);
+  await page.locator('#habitat-zoom-in').click();
+  assert.ok((await page.evaluate(()=>window.KresfHabitat3D.state.radius))<beforeZoom);
+  console.log('PASS genuine WebGL context, depth-tested frame rendering, orbit drag and 3D camera zoom');
   await camera.click();
   assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('view-side')),true);
   assert.equal(await camera.getAttribute('aria-pressed'),'true');
@@ -120,7 +146,7 @@ try {
   assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('view-side')),false);
   assert.equal(await camera.getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('#habitat-scene svg .habitat-far-trees').count(),1);
-  console.log('PASS accessible Habitat camera toggle and layered 3D-style terrain');
+  console.log('PASS accessible WebGL/2D fallback toggle and legacy illustration');
   assert.equal(await page.locator('#chk-fence').isEnabled(),false);
   await start.click();
   assert.equal(await page.locator('#chk-fence').isEnabled(),true);
@@ -129,11 +155,13 @@ try {
   await page.locator('#chk-speed').check();
   assert.match(await page.locator('#habitat-thought').innerText(),/Traffic is slower/);
   assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('traffic-slow')),true);
+  assert.equal(await page.evaluate(()=>window.KresfHabitat3D.state.speed),true);
   await page.locator('#chk-fence').check();
   assert.match(await page.locator('#habitat-hint').innerText(),/fauna underpass/);
   await page.locator('#chk-under').check();
   assert.match(await page.locator('#habitat-thought').innerText(),/found the underpass/i);
   assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('is-crossing')),true);
+  assert.equal(await page.evaluate(()=>window.KresfHabitat3D.state.phase),'crossing');
   await page.waitForTimeout(5650);
   assert.equal(await page.locator('#habitat-celebration').isVisible(),true);
   assert.match(await page.locator('#habitat-celebration').innerText(),/Congratulations/);
