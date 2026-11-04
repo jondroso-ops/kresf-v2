@@ -454,6 +454,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         let hasGPSFix = false;
         let realGPS = null;
         let gpsWatchId = null;
+        let gpsExpiryTimer = null;
 
         const CORRIDORS = {
             appin: { lat: -34.204, lng: 150.776, name: "Appin Road" },
@@ -524,6 +525,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         const MAX_GPS_AGE_MS = 30000;
         const MAX_GPS_ACCURACY_M = 100;
         function stopGPS() {
+            if (gpsExpiryTimer !== null) clearTimeout(gpsExpiryTimer);
+            gpsExpiryTimer=null;
             if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
             gpsWatchId=null;realGPS=null;hasGPSFix=false;
             document.getElementById('gps-text').innerText='GPS OFF';
@@ -545,13 +548,23 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 const accuracy=pos.coords.accuracy;
                 if (!Number.isFinite(age) || age < -5000 || age > MAX_GPS_AGE_MS
                     || !Number.isFinite(accuracy) || accuracy > MAX_GPS_ACCURACY_M) {
-                    realGPS=null;hasGPSFix=false;
+                    if(gpsExpiryTimer!==null)clearTimeout(gpsExpiryTimer);
+                    gpsExpiryTimer=null;realGPS=null;hasGPSFix=false;
                     document.getElementById('gps-text').innerText='GPS STALE / LOW ACCURACY';
                     document.getElementById('rep-coords').value='';
                     return;
                 }
                 realGPS={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy,timestamp:pos.timestamp};
                 hasGPSFix=true;
+                if(gpsExpiryTimer!==null)clearTimeout(gpsExpiryTimer);
+                const capturedTimestamp=pos.timestamp;
+                gpsExpiryTimer=setTimeout(()=>{
+                    if(!realGPS || realGPS.timestamp!==capturedTimestamp)return;
+                    realGPS=null;hasGPSFix=false;gpsExpiryTimer=null;
+                    document.getElementById('gps-text').innerText='GPS FIX EXPIRED';
+                    document.getElementById('gps-dot').className='w-2 h-2 rounded-full bg-slate-400';
+                    document.getElementById('rep-coords').value='';
+                },Math.max(0,MAX_GPS_AGE_MS-age));
                 document.getElementById('gps-dot').className='w-2 h-2 rounded-full bg-brand-primary';
                 document.getElementById('gps-text').innerText='GPS ±'+Math.round(accuracy)+'m';
                 if(isSimulating)return;
@@ -704,7 +717,13 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             if (!("geolocation" in navigator)) { toast("GPS not available on this device"); return; }
             field.value = "Locating...";
             navigator.geolocation.getCurrentPosition(
-                p => { field.value = `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`; },
+                p => {
+                    if(!Number.isFinite(p.coords.accuracy) || p.coords.accuracy>MAX_GPS_ACCURACY_M
+                      || !Number.isFinite(p.timestamp) || Date.now()-p.timestamp>MAX_GPS_AGE_MS){
+                        field.value='';toast('GPS accuracy or freshness insufficient. Try again.');return;
+                    }
+                    field.value = `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`;
+                },
                 () => { field.value = ""; toast("Couldn't get GPS. Check location permission."); },
                 { enableHighAccuracy: true, timeout: 10000 }
             );
