@@ -47,6 +47,45 @@ try {
   assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
   console.log('PASS cached PWA shell reopens offline with local data intact');
   await context.setOffline(false);
+  // Guided Habitat Lab: choices drive visible story phases, crossing, celebration and reset.
+  await page.locator('.nav-btn').nth(2).click();
+  const start=page.locator('#habitat-start');
+  assert.equal(await start.isEnabled(),true);
+  assert.equal(await page.locator('#chk-fence').isEnabled(),false);
+  await start.click();
+  assert.equal(await page.locator('#chk-fence').isEnabled(),true);
+  await page.locator('#chk-virtual').check();
+  assert.match(await page.locator('#habitat-thought').innerText(),/warning signal/i);
+  await page.locator('#chk-speed').check();
+  assert.match(await page.locator('#habitat-thought').innerText(),/Traffic is slower/);
+  await page.locator('#chk-fence').check();
+  assert.match(await page.locator('#habitat-hint').innerText(),/fauna underpass/);
+  await page.locator('#chk-under').check();
+  assert.match(await page.locator('#habitat-thought').innerText(),/found the underpass/i);
+  await page.waitForTimeout(5650);
+  assert.equal(await page.locator('#habitat-celebration').isVisible(),true);
+  assert.match(await page.locator('#habitat-celebration').innerText(),/Congratulations/);
+  await page.waitForTimeout(5100);
+  assert.equal(await page.locator('#habitat-celebration').isVisible(),false);
+  assert.equal(await page.locator('#chk-fence').isChecked(),false);
+  assert.equal(await start.isEnabled(),true);
+  console.log('PASS interactive Habitat Lab choices, crossing, 5-second celebration and automatic reset');
+
+  // The alert state machine must use the fixed 300m radius only in simulated mode.
+  const audioStates=await page.evaluate(()=>{
+    isSimulating=true;
+    updateZoneAudio(301);
+    const before=demoZoneInside;
+    updateZoneAudio(299);
+    const entered=demoZoneInside && zoneBeepTimer!==null;
+    updateZoneAudio(301);
+    const exited=!demoZoneInside && zoneBeepTimer===null;
+    isSimulating=false;stopZoneAudio();
+    return {before,entered,exited,radius:dangerRadius()};
+  });
+  assert.deepEqual(audioStates,{before:false,entered:true,exited:true,radius:300});
+  console.log('PASS simulated audio threshold and ten-second beep timer lifecycle');
+
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
 } finally {
