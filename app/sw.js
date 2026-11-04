@@ -1,13 +1,12 @@
 // KRESF v3 educational prototype. Offline tiles are not stored.
 // Versioned caches. External dependencies are cached only on successful fetch.
-const SHELL='kresf-v3-shell-2';
-const DEPS='kresf-v3-deps-2';
-const CORE=['./','./index.html','./manifest.webmanifest','../icon-192.png','../icon-512.png'];
+const SHELL='kresf-v3-shell-4';
+const DEPS='kresf-v3-deps-4';
+const CORE=['./','./index.html','./manifest.webmanifest','./styles/tailwind.css','./vendor/qrcode.js','../icon-192.png','../icon-512.png'];
 const THIRD_PARTY=[
-  ['https://cdn.tailwindcss.com/','no-cors'],
   ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.css','cors'],
-  ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.js','cors'],
-  ['https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js','no-cors']
+  ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.js','cors']
+  // Tailwind CSS and QR generator are self-hosted and precached in CORE.
 ];
 const allowed=new Set(THIRD_PARTY.map(([url])=>new URL(url).host));
 self.addEventListener('install',event=>{

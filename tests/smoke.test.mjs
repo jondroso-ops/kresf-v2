@@ -53,7 +53,8 @@ check('simulator resets after pause even with no GPS',()=>{
 check('network and CDN failures do not hide the QR link',()=> {
   assert.match(app,/id="network-badge"/);
   assert.match(app,/window\.addEventListener\("offline", refreshNetworkBadge\)/);
-  assert.match(app,/if \(window\.tailwind\) tailwind\.config/);
+  assert.match(app,/href="\.\/styles\/tailwind\.css"/);
+  assert.doesNotMatch(app,/<script src="https:\/\/cdn\.tailwindcss\.com"/);
   assert.match(app,/Open link \(QR unavailable offline\)/);
 });
 check('offline cache avoids map tiles',()=>{
@@ -91,5 +92,12 @@ check('stage 1 atomic data and migration gate',()=>{
   const legacyWorker=fs.readFileSync('sw.js','utf8');
   assert.doesNotMatch(legacyWorker,/name\.startsWith\('kresf-'\)/);
   assert.match(legacyWorker,/legacyRootCaches\.has\(name\)/);
+});
+check('self hosted stylesheet and QR generator are precached',()=>{
+  assert.match(sw,/\.\/styles\/tailwind\.css/);
+  assert.match(sw,/\.\/vendor\/qrcode\.js/);
+  assert.doesNotMatch(sw,/cdn\.tailwindcss\.com/);
+  assert.ok(fs.readFileSync('app/styles/tailwind.css','utf8').includes('.bg-brand-primary'));
+  assert.match(app,/src="\.\/vendor\/qrcode\.js"/);
 });
 console.log('All KRESF static smoke checks passed. Browser/device validation remains necessary.');
