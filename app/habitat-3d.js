@@ -195,7 +195,9 @@
     }
   }
   function road(){
-    box(0,.65,0,27,1.38,3.8,colors.soil);
+    // Earthworks on either side leave a REAL open 3D tunnel beneath the bridge.
+    box(-8.25,.65,0,11.5,1.38,3.8,colors.soil);
+    box(8.25,.65,0,11.5,1.38,3.8,colors.soil);
     box(0,1.35,0,27,.25,3.7,colors.stone);
     box(0,1.51,0,27,.12,3.55,colors.road);
     box(0,1.6,-1.65,27,.19,.12,colors.white);
