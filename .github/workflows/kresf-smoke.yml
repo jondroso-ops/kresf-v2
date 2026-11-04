@@ -23,6 +23,8 @@ jobs:
         run: node tests/security.test.mjs
       - name: Check legacy cache migration isolation
         run: node tests/stage1-cache.test.mjs
+      - name: Check offline navigation resilience
+        run: node tests/offline-resilience.test.mjs
   browser:
     needs: smoke
     runs-on: ubuntu-24.04

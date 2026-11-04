@@ -11,8 +11,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - name: Check GitHub Pages homepage, mobile app and manifest
+      - uses: actions/checkout@v4
+      - name: Verify public pages and exact deployed release on main
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           base="https://jondroso-ops.github.io/kresf-v2/"
@@ -24,18 +27,32 @@ jobs:
                grep -q 'A safer road' /tmp/kresf-site.html &&
                grep -q 'kresf-habitat-scene' /tmp/kresf-app.html &&
                grep -q 'id="habitat-start"' /tmp/kresf-app.html &&
-               grep -q 'function updateZoneAudio' /tmp/kresf-app.html &&
-               grep -q 'function saveLocalPhoto' /tmp/kresf-app.html &&
-               grep -q 'Save photo to phone' /tmp/kresf-app.html &&
                grep -q '"display": "standalone"' /tmp/kresf-manifest.json; then
-              echo "PASS: verified published companion website, four-module PWA and app manifest."
-              ok=1
-              break
+              # Pull requests test the existing production site only; they must
+              # never require unpublished PR source to match the live release.
+              if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+                echo "PASS: production site health checked (PR source not deployed)."
+                ok=1
+                break
+              fi
+              # Compare deployed bytes to exactly the checked-out main commit.
+              # Text markers alone cannot prove the new release was published.
+              if curl -fsSL --max-time 15 "${base}app/sw.js" -o /tmp/kresf-sw.js &&
+                 curl -fsSL --max-time 15 "${base}app/styles/tailwind.css" -o /tmp/kresf-tailwind.css &&
+                 cmp -s index.html /tmp/kresf-site.html &&
+                 cmp -s app/index.html /tmp/kresf-app.html &&
+                 cmp -s app/sw.js /tmp/kresf-sw.js &&
+                 cmp -s app/styles/tailwind.css /tmp/kresf-tailwind.css &&
+                 cmp -s app/manifest.webmanifest /tmp/kresf-manifest.json; then
+                echo "PASS: live website, PWA, worker, CSS and manifest match commit ${GITHUB_SHA}."
+                ok=1
+                break
+              fi
             fi
-            echo "GitHub Pages not yet showing v3 (attempt ${attempt}); retrying."
+            echo "Production Pages does not yet match checked-out release (attempt ${attempt}); retrying."
             sleep 12
           done
-          if [ "${ok}" != 1 ]; then
-            echo "::error::Site, app or manifest did not reflect v3 within the verification window."
+          if [[ "${ok}" != 1 ]]; then
+            echo "::error::GitHub Pages did not serve the expected release within verification window."
             exit 1
           fi

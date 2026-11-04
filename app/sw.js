@@ -1,6 +1,6 @@
 // KRESF v3 educational prototype. Offline tiles are not stored.
 // Versioned caches. External dependencies are cached only on successful fetch.
-const SHELL='kresf-v3-shell-4';
+const SHELL='kresf-v3-shell-5';
 const DEPS='kresf-v3-deps-4';
 const CORE=['./','./index.html','./manifest.webmanifest','./styles/tailwind.css','./vendor/qrcode.js','../icon-192.png','../icon-512.png'];
 const THIRD_PARTY=[
@@ -51,14 +51,26 @@ self.addEventListener('fetch',event=>{
   }
   event.respondWith((async()=>{
     const cache=await caches.open(SHELL);
+    // Navigate with a bounded timeout; never display a server error instead
+    // of an available cached app shell during a temporary outage.
+    const isNavigation=req.mode==='navigate';
+    const fallback=async()=>await cache.match(req) ||
+      (isNavigation ? await cache.match('./index.html') : null);
+    const controller=isNavigation ? new AbortController() : null;
+    const timer=controller ? setTimeout(()=>controller.abort(),5000) : null;
     try{
-      const fresh=await fetch(req);
+      const fresh=controller ? await fetch(req,{signal:controller.signal}) : await fetch(req);
+      if(isNavigation && fresh.status>=500 && fresh.status<=599){
+        return await fallback() || fresh;
+      }
       if(fresh.ok && url.pathname.startsWith(new URL('./',self.location.href).pathname)){
         event.waitUntil(cache.put(req,fresh.clone()));
       }
       return fresh;
     }catch(e){
-      return await cache.match(req) || (req.mode==='navigate' ? await cache.match('./index.html') : Response.error());
+      return await fallback() || Response.error();
+    }finally{
+      if(timer!==null)clearTimeout(timer);
     }
   })());
 });

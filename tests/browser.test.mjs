@@ -148,15 +148,47 @@ try {
     isSimulating=true;
     updateZoneAudio(301);
     const before=demoZoneInside;
+    updateZoneAudio(300);
+    const boundary=demoZoneInside && zoneBeepTimer!==null && insideDemoZone(300);
     updateZoneAudio(299);
-    const entered=demoZoneInside && zoneBeepTimer!==null;
+    const entered=demoZoneInside;
     updateZoneAudio(301);
     const exited=!demoZoneInside && zoneBeepTimer===null;
     isSimulating=false;stopZoneAudio();
-    return {before,entered,exited,radius:dangerRadius()};
+    return {before,boundary,entered,exited,radius:dangerRadius(),outside:insideDemoZone(301)};
   });
-  assert.deepEqual(audioStates,{before:false,entered:true,exited:true,radius:300});
+  assert.deepEqual(audioStates,{before:false,boundary:true,entered:true,exited:true,radius:300,outside:false});
   console.log('PASS simulated audio threshold and ten-second beep timer lifecycle');
+  // Audio unlock is asynchronous: rejected resume must not display success.
+  const rejected=await page.evaluate(async()=>{
+    const original=window.AudioContext;
+    class DeniedContext {
+      state='suspended';
+      resume(){return Promise.reject(Error('Permission denied'));}
+    }
+    window.AudioContext=DeniedContext;
+    const previous=audioCtx;audioCtx=null;isAudioUnlocked=false;
+    try{
+      await initAudioEngine();
+      return {unlocked:isAudioUnlocked,button:document.getElementById('btn-audio-init').className};
+    }finally{window.AudioContext=original;audioCtx=previous;}
+  });
+  assert.equal(rejected.unlocked,false);
+  assert.doesNotMatch(rejected.button,/^bg-brand-primary /);
+  const accepted=await page.evaluate(async()=>{
+    const original=window.AudioContext;
+    class AllowedContext {
+      state='suspended';
+      async resume(){this.state='running';}
+    }
+    window.AudioContext=AllowedContext;
+    const previous=audioCtx;audioCtx=null;isAudioUnlocked=false;
+    try{await initAudioEngine();return isAudioUnlocked;}
+    finally{window.AudioContext=original;audioCtx=previous;isAudioUnlocked=false;}
+  });
+  assert.equal(accepted,true);
+  console.log('PASS audio resume rejection and successful unlock are reported accurately');
+
 
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
