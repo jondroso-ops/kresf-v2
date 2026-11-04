@@ -102,6 +102,35 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 .kresf-scene-footnote {color:#476554;font-size:11px;line-height:1.5;margin-top:10px}
 @media(max-width:450px){header #network-badge {display:none}#view-map .absolute.bottom-4 {left:7px;right:7px;flex-wrap:wrap}#view-map .absolute.bottom-4>div:last-child {flex-wrap:wrap}#view-map #hud-card {padding:12px}.kresf-feature-panel {padding:12px}}
 @media(prefers-reduced-motion:reduce){.kresf-car,.kresf-mother,.kresf-joey{animation:none}.kresf-car{transform:translate(420px,0)}.kresf-mother{transform:translate(200px,209px)}.kresf-joey{transform:translate(165px,231px)}}
+
+/* Interactive classroom crossing challenge */
+.habitat-start-pulse{display:block;width:100%;padding:15px 18px;margin:12px 0 8px;border:0;border-radius:15px;background:#f3a842;color:#243a2c;font-size:1.05rem;font-weight:950;letter-spacing:.055em;box-shadow:0 0 0 5px #f7b85a48;animation:habitat-pulse 1.4s ease-in-out infinite;cursor:pointer}
+.habitat-start-pulse:disabled{opacity:.7;cursor:default;animation:none}
+.habitat-hint{background:#fff9e1;border:1px solid #dfc88a;border-radius:11px;color:#28473c;padding:10px 12px;font-size:.86rem;line-height:1.45;margin:0 0 12px}
+.kresf-habitat-scene{position:relative}
+.habitat-mood{position:absolute;top:32px;left:10px;font-size:1.55rem;z-index:4;filter:drop-shadow(0 2px 1px white)}
+.habitat-thought{position:absolute;top:8px;left:100px;max-width:60%;padding:7px 11px;border-radius:14px;background:#fffefaed;color:#264e3f;font-size:clamp(.62rem,2.5vw,.84rem);font-weight:800;z-index:5;box-shadow:0 2px 7px #193d2c55}
+.kresf-habitat-scene:not(.has-fence) .kresf-fence,.kresf-habitat-scene:not(.has-underpass) .kresf-underpass{visibility:hidden}
+.kresf-habitat-scene .kresf-mother,.kresf-habitat-scene .kresf-joey{animation:none;opacity:1}
+.kresf-habitat-scene .kresf-mother{transform:translate(48px,207px)}
+.kresf-habitat-scene .kresf-joey{transform:translate(17px,229px)}
+.kresf-habitat-scene.is-crossing .kresf-mother{animation:koala-cross-mother 5.5s ease-in forwards}
+.kresf-habitat-scene.is-crossing .kresf-joey{animation:koala-cross-joey 5.5s ease-in forwards}
+.habitat-celebration[hidden]{display:none}
+.habitat-celebration{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px;padding:18px;background:#0d583de9;color:white;z-index:10;font-size:2.6rem}
+.habitat-celebration strong{font-size:clamp(1rem,4vw,1.45rem);line-height:1.2}
+.habitat-celebration span{font-size:.9rem}
+.habitat-celebration small{font-size:.7rem}
+@keyframes koala-cross-mother{0%{transform:translate(48px,207px);opacity:1}55%{transform:translate(183px,207px);opacity:1}88%{transform:translate(250px,213px);opacity:.92}100%{transform:translate(282px,213px);opacity:0}}
+@keyframes koala-cross-joey{0%{transform:translate(17px,229px);opacity:1}55%{transform:translate(160px,229px);opacity:1}88%{transform:translate(225px,227px);opacity:.92}100%{transform:translate(266px,227px);opacity:0}}
+@keyframes habitat-pulse{0%,100%{box-shadow:0 0 0 4px #f7b85a50;filter:brightness(1)}50%{box-shadow:0 0 0 10px #f7b85a10;filter:brightness(1.13)}}
+@media(prefers-reduced-motion:reduce){.habitat-start-pulse{animation:none}.kresf-habitat-scene.is-crossing .kresf-mother,.kresf-habitat-scene.is-crossing .kresf-joey{animation:none;opacity:0}}
+
+.habitat-scene-sign,.habitat-scene-virtual{position:absolute;right:17%;top:23%;padding:4px 6px;border:2px solid white;border-radius:12px;background:#f8b844;font-size:clamp(.65rem,2vw,1.05rem);font-weight:900;color:#3c3126;z-index:3}
+.habitat-scene-virtual{right:32%;top:12%;background:#d8effb}
+[hidden].habitat-scene-sign,[hidden].habitat-scene-virtual{display:none}
+#view-lab input[type=checkbox]:disabled{opacity:.35;cursor:not-allowed}
+#habitat-hint strong{color:#12654b}
 </style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden antialiased flex flex-col pt-[env(safe-area-inset-top)]">
@@ -132,7 +161,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 
             <div class="absolute top-3 left-3 right-3 z-[400] flex flex-col gap-2.5 pointer-events-none">
                 <div class="bg-slate-900/80 backdrop-blur text-[9px] text-slate-400 p-1.5 rounded-lg border border-slate-700/50 text-center uppercase tracking-wider font-semibold pointer-events-auto">
-                    STEM DEMO ONLY — No verified hazards, speed limits, or real-time koala detection. Never use while driving.
+                    STEM DEMO ONLY — The voice and 300 m alerts are simulated, not live road warnings. Never use while driving.
                 </div>
                 <div id="hud-card" class="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl pointer-events-auto transition-all duration-300">
                     <div class="flex justify-between items-center mb-1.5">
@@ -170,7 +199,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         <span>🚗</span><span id="sim-btn-text">Simulate</span>
                     </button>
                     <button id="btn-gps-init" onclick="startGPS()" aria-label="Enable optional GPS" title="Enable optional GPS" class="bg-slate-800 text-slate-100 px-3 py-2 rounded-xl border border-slate-600 text-xs">📍 GPS</button>
-                    <button id="btn-audio-init" onclick="initAudioEngine()" class="bg-slate-800 text-amber-400 p-2.5 rounded-xl border border-slate-600 active:scale-95">🔊</button>
+                    <button id="btn-audio-init" onclick="initAudioEngine()" aria-label="Enable audio for classroom simulation" title="Enable demo voice and beeps" class="bg-slate-800 text-amber-400 p-2.5 rounded-xl border border-slate-600 active:scale-95">🔊</button>
                 </div>
             </div>
         </section>
@@ -242,7 +271,14 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                     <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">ANIMATED MODEL</span></div>
                     <h3 class="kresf-panel-heading">A safer way across</h3>
                     <p class="kresf-description">Watch a mother koala and joey travel along a wildlife fence toward a purpose-built fauna underpass, away from traffic.</p>
-                    <div class="kresf-habitat-scene" role="img" aria-label="Animated mother koala and joey moving through a wildlife underpass below a road, with a protective fence beside the road">
+                    <button type="button" id="habitat-start" onclick="startHabitatStory()" class="habitat-start-pulse" aria-label="Start interactive koala crossing challenge">▶ START ANIMATION</button>
+                    <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
+                    <div id="habitat-scene" class="kresf-habitat-scene" role="img" aria-label="Interactive illustrated road crossing with a mother koala, joey, fencing and an optional fauna underpass">
+                      <div id="habitat-mood" class="habitat-mood" aria-live="polite">😰 😟</div>
+                      <div id="habitat-speed-sign" class="habitat-scene-sign" aria-hidden="true" hidden>🛑 60</div>
+                      <div id="habitat-virtual-sign" class="habitat-scene-virtual" aria-hidden="true" hidden>📡</div>
+                      <div id="habitat-thought" class="habitat-thought">How can we cross safely?</div>
+                      <div id="habitat-celebration" class="habitat-celebration" role="status" aria-live="assertive" hidden>🎉🐨🎉<strong>Congratulations, you did it!</strong><span>The koalas crossed safely in this simulation.</span><small>Resetting the challenge in 5 seconds…</small></div>
                       <svg viewBox="0 0 620 258" width="100%" role="presentation" aria-hidden="true">
                         <defs>
                           <linearGradient id="forestSky" x2="0" y2="1"><stop stop-color="#c4edd2"/><stop offset="1" stop-color="#f8e8b5"/></linearGradient>
@@ -256,13 +292,13 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         <rect x="0" y="140" width="620" height="42" fill="#50575e"/><path d="M0 160H620" stroke="#f8e7a7" stroke-width="3" stroke-dasharray="24 18"/>
                         <g class="kresf-car"><rect x="0" y="142" width="82" height="28" rx="10" fill="#2d657d"/><path d="M16 142L30 130H61L73 142" fill="#2d657d"/><circle cx="19" cy="169" r="8" fill="#172b30"/><circle cx="64" cy="169" r="8" fill="#172b30"/></g>
                         <rect y="181" width="620" height="77" fill="url(#soil)"/>
-                        <rect x="190" y="177" width="230" height="71" rx="17" fill="#8d9290" stroke="#d4d7cc" stroke-width="10"/>
-                        <rect x="207" y="184" width="196" height="57" rx="12" fill="#344f43"/>
+                        <g class="kresf-underpass"><rect x="190" y="177" width="230" height="71" rx="17" fill="#8d9290" stroke="#d4d7cc" stroke-width="10"/>
+                        <rect x="207" y="184" width="196" height="57" rx="12" fill="#344f43"/></g>
                         <path d="M0 243H620" stroke="#b59c66" stroke-width="4" stroke-dasharray="10 8"/>
-                        <path d="M18 138V182M46 138V182M74 138V182M102 138V182M130 138V182M158 138V182M186 138V182" stroke="#326f50" stroke-width="5"/>
+                        <g class="kresf-fence"><path d="M18 138V182M46 138V182M74 138V182M102 138V182M130 138V182M158 138V182M186 138V182" stroke="#326f50" stroke-width="5"/>
                         <path d="M18 144H186M18 161H186M18 178H186" stroke="#326f50" stroke-width="3"/>
                         <path d="M432 138V182M460 138V182M488 138V182M516 138V182M544 138V182M572 138V182M600 138V182" stroke="#326f50" stroke-width="5"/>
-                        <path d="M432 144H600M432 161H600M432 178H600" stroke="#326f50" stroke-width="3"/>
+                        <path d="M432 144H600M432 161H600M432 178H600" stroke="#326f50" stroke-width="3"/></g>
                         <g class="kresf-mother">
                           <circle cx="11" cy="-18" r="11" fill="#849994"/><circle cx="44" cy="-18" r="11" fill="#849994"/>
                           <ellipse cx="28" cy="7" rx="34" ry="25" fill="#92a7a0"/>
@@ -271,11 +307,12 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                           <ellipse cx="12" cy="25" rx="9" ry="6" fill="#718b7b"/><ellipse cx="47" cy="25" rx="9" ry="6" fill="#718b7b"/>
                         </g>
                         <g class="kresf-joey"><circle cx="-7" cy="-8" r="8" fill="#829d95"/><circle cx="10" cy="-8" r="8" fill="#829d95"/><circle cx="0" cy="0" r="14" fill="#adc4b7"/><ellipse cx="0" cy="5" rx="6" ry="8" fill="#47585b"/><circle cx="-6" cy="-3" r="2" fill="#1c3434"/><circle cx="6" cy="-3" r="2" fill="#1c3434"/></g>
-                        <g font-family="system-ui" font-size="12" font-weight="700"><rect x="12" y="12" width="123" height="27" rx="12" fill="#fff" opacity=".94"/><text x="23" y="30" fill="#24583f">WILDLIFE FENCE</text><rect x="407" y="217" width="194" height="27" rx="12" fill="#f4f9ea"/><text x="416" y="235" fill="#265941">FAUNA UNDERPASS →</text></g>
+                        <g class="kresf-fence" font-family="system-ui" font-size="12" font-weight="700"><rect x="12" y="12" width="123" height="27" rx="12" fill="#fff" opacity=".94"/><text x="23" y="30" fill="#24583f">WILDLIFE FENCE</text></g>
+                        <g class="kresf-underpass" font-family="system-ui" font-size="12" font-weight="700"><rect x="407" y="217" width="194" height="27" rx="12" fill="#f4f9ea"/><text x="416" y="235" fill="#265941">FAUNA UNDERPASS →</text></g>
                       </svg>
                     </div>
                     <div class="kresf-scene-legend"><span>🌿 Protected habitat</span><span>🧱 Guiding fence</span><span>🚇 Safe crossing</span></div>
-                    <p class="kresf-scene-footnote">Illustrative animation only. Effective crossings depend on expert engineering, habitat connectivity and monitoring.</p>
+                    <p class="kresf-scene-footnote">Choose the improvements below to change the scene. This is a classroom model—not verified animal behaviour or road-safety advice.</p>
                 </div>
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -414,7 +451,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             const d = new Date(), m = d.getHours() * 60 + d.getMinutes();
             return m >= 17 * 60 + 30 || m < 6 * 60 + 30;   // 5:30 PM to 6:30 AM
         }
-        const dangerRadius = () => isNight() ? 500 : 300;
+        const dangerRadius = () => 300; // Fixed simulated demonstration radius in metres
         function setTimeMode(v) { timeMode = v; refreshTimeUI(); }
         function refreshTimeUI() {
             const n = isNight();
@@ -518,19 +555,21 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 bar.className = "bg-brand-danger h-full transition-all";
                 distEl.className = "text-2xl font-black text-brand-danger font-mono";
                 document.getElementById('hud-status-desc').innerText = `⚠️ SIMULATED AREA (<${radius} m) — not a live warning`;
-                if (!isDangerActive) { isDangerActive = true; if (isSimulating) playAudioWarning(); if (isSimulating) card.classList.add('hud-alert-active'); }
+                if (!isDangerActive) { isDangerActive = true; if (isSimulating) card.classList.add('hud-alert-active'); }
             } else {
                 bar.className = "bg-brand-primary h-full transition-all";
                 distEl.className = "text-2xl font-black text-brand-primary font-mono";
                 document.getElementById('hud-status-desc').innerText = `Outside demo radius (>${radius} m) — not a safety clearance`;
                 isDangerActive = false; card.classList.remove('hud-alert-active');
             }
+            updateZoneAudio(dist);
         }
 
         // Drive simulation: ~44 m per step every 2.6 s = about 60 km/h
         function toggleDriveSimulation() {
             if (isSimulating) {
                 clearInterval(simInterval); isSimulating = false;
+                stopZoneAudio();
                 if (realGPS) { currentLat = realGPS.lat; currentLng = realGPS.lng; }
                 else { currentLat = activeTarget.lat - 0.015; currentLng = activeTarget.lng; }
                 if (userMarker) userMarker.setLatLng([currentLat,currentLng]);
@@ -538,10 +577,14 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 document.getElementById('sim-btn-text').innerText = "Simulate";
                 return;
             }
+            stopZoneAudio();
             isSimulating = true;
             simStep = 0;
             document.getElementById('sim-btn-text').innerText = "Pause";
             const sLat = activeTarget.lat - 0.012, sLng = activeTarget.lng - 0.008;
+            currentLat = sLat; currentLng = sLng;
+            if (userMarker) userMarker.setLatLng([currentLat,currentLng]);
+            evaluateRisk(currentLat,currentLng);
             simInterval = setInterval(() => {
                 simStep++;
                 if (simStep > 60) simStep = 0;
@@ -552,23 +595,63 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             }, 2600);
         }
 
-        function initAudioEngine() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            isAudioUnlocked = true;
-            document.getElementById('btn-audio-init').className = "bg-brand-primary text-slate-950 p-2.5 rounded-xl font-bold";
+        // Voice and beeps work ONLY during a user-started classroom simulation.
+        let demoZoneInside = false;
+        let zoneBeepTimer = null;
+        function speakDemo(text) {
+            if (!isAudioUnlocked || !isSimulating) return;
+            if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+                toast('Voice not supported by this browser: ' + text);
+                return;
+            }
+            try {
+                speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-AU'; utterance.rate = 0.92; utterance.volume = 0.8;
+                speechSynthesis.speak(utterance);
+            } catch (_) { toast('Voice unavailable on this device'); }
         }
-
         function playAudioWarning() {
-            if (!isAudioUnlocked || !audioCtx) return;
+            if (!isAudioUnlocked || !isSimulating || !audioCtx) return;
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), now = audioCtx.currentTime;
-            osc.type = 'triangle'; osc.frequency.value = 587.33;
+            osc.type = 'sine'; osc.frequency.value = 600;
             osc.connect(gain); gain.connect(audioCtx.destination);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.8, now + 0.08); gain.gain.linearRampToValueAtTime(0, now + 0.25);
-            gain.gain.setValueAtTime(0, now + 0.35);
-            gain.gain.linearRampToValueAtTime(0.8, now + 0.43); gain.gain.linearRampToValueAtTime(0, now + 0.60);
-            osc.start(now); osc.stop(now + 0.65);
+            gain.gain.linearRampToValueAtTime(0.15, now + 0.03);
+            gain.gain.linearRampToValueAtTime(0, now + 0.23);
+            osc.start(now); osc.stop(now + 0.25);
+        }
+        function stopZoneAudio() {
+            if (zoneBeepTimer !== null) { clearInterval(zoneBeepTimer); zoneBeepTimer = null; }
+            demoZoneInside = false;
+            if ('speechSynthesis' in window) try { speechSynthesis.cancel(); } catch (_) {}
+        }
+        function updateZoneAudio(distanceMetres) {
+            if (!isSimulating) return;
+            const inside = distanceMetres < 300;
+            if (inside && !demoZoneInside) {
+                demoZoneInside = true;
+                speakDemo('Be careful, koala zone ahead');
+                if (zoneBeepTimer !== null) clearInterval(zoneBeepTimer);
+                zoneBeepTimer = setInterval(() => {
+                    if (isSimulating && demoZoneInside) playAudioWarning();
+                }, 10000);
+            } else if (!inside && demoZoneInside) {
+                if (zoneBeepTimer !== null) { clearInterval(zoneBeepTimer); zoneBeepTimer = null; }
+                demoZoneInside = false;
+                speakDemo('Thank you, you have left koalas zone');
+            }
+        }
+        function initAudioEngine() {
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) throw Error('Web Audio not supported');
+                if (!audioCtx) audioCtx = new Ctx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                isAudioUnlocked = true;
+                document.getElementById('btn-audio-init').className = "bg-brand-primary text-slate-950 p-2.5 rounded-xl font-bold";
+                toast('Simulation sound enabled. Voice works only in simulated mode.');
+            } catch (_) { toast('Audio unavailable on this device'); }
         }
 
         // Real GPS only: the field stays empty until the device gives a position
@@ -608,6 +691,96 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             switchView('profile', document.querySelectorAll('.nav-btn')[3]);
         }
 
+        // Interactive school activity state machine. No real animals or road conditions are inferred.
+        let habitatPhase = 'idle';
+        let habitatCrossTimer = null, habitatResetTimer = null;
+        const habitatInputs = () => ['chk-fence','chk-under','chk-speed','chk-virtual'].map(id => document.getElementById(id));
+        function clearHabitatTimers() {
+            if (habitatCrossTimer !== null) { clearTimeout(habitatCrossTimer); habitatCrossTimer = null; }
+            if (habitatResetTimer !== null) { clearTimeout(habitatResetTimer); habitatResetTimer = null; }
+        }
+        function resetHabitatStory() {
+            clearHabitatTimers();
+            habitatPhase = 'idle';
+            habitatInputs().forEach(el => { el.checked = false; el.disabled = true; });
+            const scene = document.getElementById('habitat-scene');
+            scene.classList.remove('has-fence','has-underpass','is-crossing');
+            document.getElementById('habitat-celebration').hidden = true;
+            document.getElementById('habitat-speed-sign').hidden = true;
+            document.getElementById('habitat-virtual-sign').hidden = true;
+            document.getElementById('habitat-start').disabled = false;
+            document.getElementById('habitat-start').textContent = '▶ START ANIMATION';
+            document.getElementById('habitat-hint').textContent =
+                'Press Start Animation, then introduce the road safety options to help the koalas.';
+            document.getElementById('habitat-mood').textContent = '😰 😟';
+            document.getElementById('habitat-thought').textContent = 'How can we cross safely?';
+            calculateLabRisk();
+        }
+        function startHabitatStory() {
+            resetHabitatStory();
+            habitatPhase = 'choosing';
+            habitatInputs().forEach(el => { el.disabled = false; });
+            document.getElementById('habitat-start').disabled = true;
+            document.getElementById('habitat-start').textContent = '🌿 CHOOSE THE SAFETY OPTIONS BELOW';
+            document.getElementById('habitat-hint').textContent =
+                'The koalas are worried about traffic. Try virtual fencing, lower speeds and exclusion fencing. Then add a fauna underpass.';
+            document.getElementById('habitat-thought').textContent = 'The road looks frightening!';
+            calculateLabRisk();
+        }
+        function renderHabitatStory() {
+            const fence = document.getElementById('chk-fence').checked,
+                under = document.getElementById('chk-under').checked,
+                speed = document.getElementById('chk-speed').checked,
+                virtual = document.getElementById('chk-virtual').checked;
+            const scene = document.getElementById('habitat-scene');
+            scene.classList.toggle('has-fence', fence);
+            scene.classList.toggle('has-underpass', under);
+            document.getElementById('habitat-speed-sign').hidden = !speed;
+            document.getElementById('habitat-virtual-sign').hidden = !virtual;
+            if (habitatPhase !== 'choosing') return;
+            let mood='😰 😟', thought='How can we get past the traffic?';
+            let hint='Try different options. Exclusion fencing and a fauna underpass together offer a modelled crossing route.';
+            if (virtual) {
+                thought='A warning signal… but where do we cross?';
+                hint='Virtual warnings alone do not create a physical crossing. Keep exploring.';
+            }
+            if (speed) {
+                mood='😐 😕';
+                thought='Traffic is slower, but we still need a route!';
+                hint='Slower vehicles change the example, but do not provide the koalas with a protected crossing.';
+            }
+            if (fence) {
+                mood='🤔 😟';
+                thought='This fence keeps us back… where is the tunnel?';
+                hint='The fence prevents access to the roadway. Now choose a fauna underpass to create a crossing.';
+            }
+            if (under && !fence) {
+                mood='🤔 😯';
+                thought='There is a tunnel! How do we find it safely?';
+                hint='The underpass needs guidance fencing in this simple demonstration. Tick exclusion fencing too.';
+            }
+            if (fence && under) {
+                mood='😄 🥰';
+                thought='We found the underpass! Let’s cross!';
+                hint='Excellent combination! The koalas are following the protective fencing to the underpass.';
+                habitatPhase='crossing';
+                habitatInputs().forEach(el => { el.disabled = true; });
+                scene.classList.add('is-crossing');
+                habitatCrossTimer = setTimeout(showHabitatCelebration, 5500);
+            }
+            document.getElementById('habitat-mood').textContent = mood;
+            document.getElementById('habitat-thought').textContent = thought;
+            document.getElementById('habitat-hint').textContent = hint;
+        }
+        function showHabitatCelebration() {
+            if (habitatPhase !== 'crossing') return;
+            habitatPhase='celebrating';
+            document.getElementById('habitat-celebration').hidden=false;
+            document.getElementById('habitat-hint').textContent =
+                'Congratulations! In the model, fencing helped guide the koalas through the underpass.';
+            habitatResetTimer = setTimeout(resetHabitatStory, 5000);
+        }
+
         // Illustrative risk model. Baseline is lower by day (60) and full at night (100).
         // Interventions reduce that baseline; fencing + underpass work together.
         function calculateLabRisk() {
@@ -627,7 +800,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             bar.style.width = `${risk}%`;
             bar.className = `bg-${col} h-full transition-all duration-500`;
             txt.className = `text-4xl font-black font-mono text-${col}`;
-            document.getElementById('lab-note').innerText = night ? 'Night: baseline risk 100% (peak ground movement).' : 'Day: baseline risk 60%.';
+            document.getElementById('lab-note').innerText = night ? 'Night: baseline risk 100% (illustrative index).' : 'Day: baseline risk 60% (illustrative index).';
+            renderHabitatStory();
         }
 
         function updateProfileUI() {
@@ -677,7 +851,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             refreshNetworkBadge();
             window.addEventListener("online", refreshNetworkBadge);
             window.addEventListener("offline", refreshNetworkBadge);
-            initMap(); updateProfileUI(); initQRCodes(); refreshTimeUI();
+            initMap(); updateProfileUI(); initQRCodes(); resetHabitatStory(); refreshTimeUI();
             setInterval(refreshTimeUI, 60000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
                 navigator.serviceWorker.register('sw.js').catch(() => {});
