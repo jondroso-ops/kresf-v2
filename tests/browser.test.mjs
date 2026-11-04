@@ -28,6 +28,7 @@ try {
 
   await page.locator('button[onclick="switchView(\'report\', this)"]').click();
   assert.equal(await page.locator('#rep-demo').isChecked(),true);
+  await page.waitForFunction(()=>storageReady);
   await page.locator('button[onclick="submitReport()"]').click();
   assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
   assert.match(await page.locator('#logs-list-container').innerText(),/Classroom demo — no location/);
@@ -113,6 +114,59 @@ try {
 
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
+  // Stage 1: reject failed persistence without clearing inputs or awarding XP.
+  const failureContext=await browser.newContext({viewport:{width:390,height:844}});
+  const failurePage=await failureContext.newPage();
+  try {
+    await failurePage.route(/(cdn\\.tailwindcss\\.com|unpkg\\.com|cdn\\.jsdelivr\\.net)/,route=>route.abort());
+    await failurePage.goto(new URL('app/',base).href,{waitUntil:'domcontentloaded'});
+    await failurePage.waitForFunction(()=>storageReady);
+    await failurePage.locator('.nav-btn').nth(1).click();
+    await failurePage.locator('#rep-status').selectOption({index:1});
+    const previous=await failurePage.locator('#rep-status').inputValue();
+    await failurePage.evaluate(()=>{
+      transactObservation=async()=>{throw new DOMException('Simulated quota exceeded','QuotaExceededError');};
+    });
+    await failurePage.locator('button[onclick="submitReport()"]').click();
+    await failurePage.waitForFunction(()=>document.querySelector('#toast')?.innerText.includes('NOT SAVED'));
+    assert.equal(await failurePage.locator('#rep-status').inputValue(),previous);
+    assert.equal(await failurePage.locator('#prof-xp').innerText(),'0 XP');
+    const noRecords=await failurePage.evaluate(async()=>{
+      const db=await openPhotoDb();
+      return new Promise((resolve,reject)=>{
+        const req=db.transaction('observations','readonly').objectStore('observations').getAll();
+        req.onsuccess=()=>resolve(req.result.length);
+        req.onerror=()=>reject(req.error);
+      });
+    });
+    assert.equal(noRecords,0);
+    console.log('PASS failed durable commit preserves report and awards no XP');
+  } finally {await failureContext.close();}
+
+  // Stage 1: corrupted legacy JSON shape must not crash unrelated modules.
+  const damagedContext=await browser.newContext();
+  await damagedContext.addInitScript(()=>{
+    try{
+      localStorage.setItem('kresf_logs',JSON.stringify({length:1}));
+      localStorage.setItem('kresf_xp',JSON.stringify({invalid:true}));
+    }catch(e){}
+  });
+  const damagedPage=await damagedContext.newPage();
+  const damagedErrors=[];
+  damagedPage.on('pageerror',e=>damagedErrors.push(e.message));
+  try{
+    await damagedPage.route(/(cdn\\.tailwindcss\\.com|unpkg\\.com|cdn\\.jsdelivr\\.net)/,route=>route.abort());
+    await damagedPage.goto(new URL('app/',base).href,{waitUntil:'domcontentloaded'});
+    await damagedPage.waitForFunction(()=>storageReady);
+    await damagedPage.locator('.nav-btn').nth(3).click();
+    assert.equal(await damagedPage.locator('#prof-xp').innerText(),'0 XP');
+    assert.match(await damagedPage.locator('#logs-list-container').innerText(),/No sightings yet/);
+    await damagedPage.locator('.nav-btn').nth(2).click();
+    assert.equal(await damagedPage.locator('#habitat-start').isEnabled(),true);
+    assert.deepEqual(damagedErrors,[]);
+    console.log('PASS malformed legacy state does not interrupt PWA modules');
+  }finally{await damagedContext.close();}
+
 } finally {
   await browser.close();
 }
