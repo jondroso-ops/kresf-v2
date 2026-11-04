@@ -41,4 +41,11 @@ pass('known external script origins are explicit',()=>{
     }
   }
 });
+pass('QR runtime is self-hosted with licence and local offline cache',()=>{
+  assert.match(app,/src="\.\/vendor\/qrcode\.js"/);
+  assert.doesNotMatch(app,/src="https:\/\/cdn\.jsdelivr\.net\/npm\/qrcode-generator/);
+  assert.match(worker,/\.\/vendor\/qrcode\.js/);
+  assert.ok(fs.readFileSync('app/vendor/qrcode.LICENSE','utf8').includes('MIT License'));
+  assert.doesNotMatch(app,/script-src[^"]*cdn\.jsdelivr\.net/);
+});
 console.log('KRESF static security checks complete; GitHub settings and dependency integrity remain separate review gates.');
