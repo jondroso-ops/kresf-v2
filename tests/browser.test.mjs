@@ -67,7 +67,7 @@ try {
   // Stage 2: a saved observation can be individually deleted.
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('button:text("Delete observation")').last().click();
-  await page.waitForFunction(()=>document.querySelector('#logs-list-container')?.querySelectorAll('button')?.length < 4);
+  await page.waitForFunction(()=>[...document.querySelectorAll('#logs-list-container button')].filter(b=>b.textContent==='Delete observation').length===1);
   console.log('PASS individual observation deletion available');
   
   // The local app shell is precached by the app-scoped service worker.
@@ -120,6 +120,32 @@ try {
 
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
+  // Stage 2: GPS must be explicitly stoppable and must reject stale fixes.
+  const gpsState=await page.evaluate(()=>{
+    const oldGeo=Object.getOwnPropertyDescriptor(navigator,'geolocation');
+    let success,fail,cleared=null;
+    Object.defineProperty(navigator,'geolocation',{configurable:true,value:{
+      watchPosition(ok,bad){success=ok;fail=bad;return 42;},
+      clearWatch(id){cleared=id;}
+    }});
+    try{
+      startGPS();
+      success({coords:{latitude:-34.2,longitude:150.7,accuracy:12},timestamp:Date.now()-60000});
+      const staleRejected=!hasGPSFix && realGPS===null;
+      success({coords:{latitude:-34.2,longitude:150.7,accuracy:10},timestamp:Date.now()});
+      const goodAccepted=hasGPSFix;
+      fail({code:1});
+      const errorClears=!hasGPSFix && realGPS===null && gpsWatchId===null;
+      startGPS();stopGPS();
+      return {staleRejected,goodAccepted,errorClears,stopClears:!hasGPSFix&&realGPS===null&&gpsWatchId===null,cleared};
+    }finally{
+      if(oldGeo)Object.defineProperty(navigator,'geolocation',oldGeo);
+      else delete navigator.geolocation;
+    }
+  });
+  assert.deepEqual(gpsState,{staleRejected:true,goodAccepted:true,errorClears:true,stopClears:true,cleared:42});
+  console.log('PASS GPS explicit stop and stale/error invalidation');
+
   // Stage 1: reject failed persistence without clearing inputs or awarding XP.
   const failureContext=await browser.newContext({viewport:{width:390,height:844}});
   const failurePage=await failureContext.newPage();
