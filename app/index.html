@@ -424,14 +424,28 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         // Companion website address for the first QR code. Leave '' to reuse this app's address.
         const COMPANION_URL = 'https://jondroso-ops.github.io/kresf-v2/';
 
+        // Legacy localStorage is read-only during migration. IndexedDB is the durable store.
         const safeParse = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
-        const safeSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+        function validObservation(value) {
+            return value && typeof value === 'object' && !Array.isArray(value)
+                && typeof value.status === 'string' && typeof value.coords === 'string'
+                && typeof value.time === 'string'
+                && (!('photoId' in value) || typeof value.photoId === 'string');
+        }
+        function validateObservations(value) {
+            return Array.isArray(value) ? value.filter(validObservation).slice(0,1000) : [];
+        }
+        function validateXP(value) {
+            const number=Number(value);
+            return Number.isSafeInteger(number) && number >= 0 && number <= 1000000 ? number : 0;
+        }
 
         let map, userMarker, simInterval, simStep = 0;
         let audioCtx, isAudioUnlocked = false;
         let isDangerActive = false, isSimulating = false;
-        let userXP = parseInt(safeParse('kresf_xp', 0)) || 0;
-        let sightingsLog = safeParse('kresf_logs', []);
+        let userXP = validateXP(safeParse('kresf_xp', 0));
+        let sightingsLog = validateObservations(safeParse('kresf_logs', []));
+        let storageReady = false;
         let timeMode = 'auto';
         let hasGPSFix = false;
         let realGPS = null;
@@ -680,21 +694,81 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             document.getElementById("rep-photo").value = "";
         }
         // Private local photo storage: IndexedDB stores browser-local blobs, not network uploads.
-        const PHOTO_DB_NAME = 'kresf-local-photos-v1';
+        const PHOTO_DB_NAME = 'kresf-local-photos-v1'; // Preserve existing photo DB; upgrade schema in place.
         let photoDbPromise = null;
         const maxPhotoSize = 5 * 1024 * 1024;
         function openPhotoDb() {
             if (!('indexedDB' in window)) return Promise.reject(Error('On-device photo storage is unavailable'));
             if (photoDbPromise) return photoDbPromise;
             photoDbPromise = new Promise((resolve,reject)=>{
-                const req = indexedDB.open(PHOTO_DB_NAME, 1);
-                req.onupgradeneeded = ()=>{ if (!req.result.objectStoreNames.contains('photos')) req.result.createObjectStore('photos'); };
+                const req = indexedDB.open(PHOTO_DB_NAME, 2);
+                req.onupgradeneeded = ()=>{
+                    for (const name of ['photos','observations','metadata']) {
+                        if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
+                    }
+                };
                 req.onsuccess = ()=>resolve(req.result);
                 req.onerror = ()=>reject(req.error || Error('Cannot open photo database'));
                 req.onblocked = ()=>reject(Error('Photo database is blocked by another tab'));
             }).catch(error=>{ photoDbPromise=null; throw error; });
             return photoDbPromise;
         }
+        // Atomic record+photo+XP commit. Completion is acknowledged only after
+        // IndexedDB's transaction commits, not when a request is queued.
+        function transactObservation(record, photo, nextXP) {
+            return openPhotoDb().then(db=>new Promise((resolve,reject)=>{
+                let completed=false;
+                const tx=db.transaction(['observations','photos','metadata'],'readwrite');
+                const records=tx.objectStore('observations');
+                const metadata=tx.objectStore('metadata');
+                records.put(record,record.id);
+                if (photo) tx.objectStore('photos').put(photo,record.id);
+                metadata.put(nextXP,'xp');
+                tx.oncomplete=()=>{completed=true;resolve();};
+                tx.onerror=()=>{if(!completed) reject(tx.error || Error('Observation storage failed'));};
+                tx.onabort=()=>{if(!completed) reject(tx.error || Error('Observation storage aborted'));};
+            }));
+        }
+        async function loadDurableState() {
+            const db=await openPhotoDb();
+            return new Promise((resolve,reject)=>{
+                const tx=db.transaction(['observations','metadata'],'readwrite');
+                const records=tx.objectStore('observations');
+                const metadata=tx.objectStore('metadata');
+                const all=records.getAll();
+                const migrated=metadata.get('migration-v2');
+                const xp=metadata.get('xp');
+                let nextLogs=[],nextXP=0;
+                // Migration runs once and preserves legacy data without deleting it.
+                tx.oncomplete=()=>{
+                    sightingsLog=nextLogs;
+                    userXP=nextXP;
+                    storageReady=true;
+                    resolve();
+                };
+                tx.onerror=()=>reject(tx.error || Error('Cannot read observations'));
+                tx.onabort=()=>reject(tx.error || Error('Observation migration aborted'));
+                migrated.onsuccess=()=>{
+                    // Deliberately leave legacy data intact for potential recovery.
+                    const prior=validateObservations(safeParse('kresf_logs',[]));
+                    const priorXP=validateXP(safeParse('kresf_xp',0));
+                    const existing=validateObservations(all.result || []);
+                    const alreadyMigrated=!!migrated.result;
+                    if (!alreadyMigrated) {
+                        const seen=new Set(existing.map((r)=>r.id).filter(Boolean));
+                        prior.forEach((r,i)=>{
+                            const id=typeof r.id==='string' && r.id ? r.id : 'legacy-'+i+'-'+r.time;
+                            if (!seen.has(id)) { records.put({...r,id},id);existing.push({...r,id});seen.add(id); }
+                        });
+                        metadata.put(Math.max(validateXP(xp.result),priorXP),'xp');
+                        metadata.put(true,'migration-v2');
+                    }
+                    nextLogs=existing;
+                    nextXP=alreadyMigrated?validateXP(xp.result):Math.max(validateXP(xp.result),priorXP);
+                };
+            });
+        }
+
         async function saveLocalPhoto(id, blob) {
             const db=await openPhotoDb();
             return new Promise((resolve,reject)=>{
@@ -759,9 +833,17 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             remove.onclick=async()=>{
                 if(!window.confirm('Remove this photo from this browser? The observation log remains.'))return;
                 try {
-                    await removeLocalPhoto(record.photoId);
+                    const db=await openPhotoDb();
+                    const changed={...record};delete changed.photoId;
+                    await new Promise((resolve,reject)=>{
+                        const tx=db.transaction(['photos','observations'],'readwrite');
+                        tx.objectStore('photos').delete(record.photoId);
+                        tx.objectStore('observations').put(changed,record.id);
+                        tx.oncomplete=resolve;
+                        tx.onerror=()=>reject(tx.error||Error('Photo removal failed'));
+                        tx.onabort=()=>reject(tx.error||Error('Photo removal aborted'));
+                    });
                     delete record.photoId;
-                    safeSet('kresf_logs',JSON.stringify(sightingsLog));
                     updateProfileUI();
                     toast('Local photo removed');
                 } catch (error) {toast('Could not remove photo: '+error.message);}
@@ -779,30 +861,30 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         async function submitReport() {
             const coords=document.getElementById('rep-coords').value;
             const demo=document.getElementById('rep-demo').checked;
-            if(!demo && !/^-?\\d+\\.\\d+, -?\\d+\\.\\d+$/.test(coords)) {
+            if (!demo && !/^-?\\d+\\.\\d+, -?\\d+\\.\\d+$/.test(coords)) {
                 toast('Get a real GPS fix first, or select classroom demonstration'); return;
             }
             const input=document.getElementById('rep-photo');
             const file=input.files?.[0];
             if(file && !validPhoto(file)){toast('Choose a photo under 5 MB (JPEG, PNG, WebP, GIF or HEIC)');return;}
+            if (!storageReady) {toast('Storage unavailable. Your report was NOT saved. Keep this form open.');return;}
             const button=document.querySelector('button[onclick="submitReport()"]');
             button.disabled=true;
             const id='obs-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);
             const record={id,coords:demo?'Classroom demo — no location':coords,demo,status:document.getElementById('rep-status').value,time:new Date().toLocaleString()};
+            if(file) record.photoId=id;
             try {
-                if(file) {
-                    await saveLocalPhoto(id,file);
-                    record.photoId=id;
-                }
+                const nextXP=userXP+50;
+                await transactObservation(record,file || null,nextXP);
+                // Never change in-memory history, award points or erase inputs before commit.
                 sightingsLog.unshift(record);
-                safeSet('kresf_logs',JSON.stringify(sightingsLog));
-                userXP+=50;safeSet('kresf_xp',userXP);
+                userXP=nextXP;
                 document.getElementById('rep-coords').value='';
                 clearPhoto();
                 toast(file?'Sighting and photo saved privately on this device! +50 XP':'Local classroom observation saved! +50 XP');
                 switchView('profile',document.querySelectorAll('.nav-btn')[3]);
             } catch(error) {
-                toast('Photo not saved: '+error.message+'. Check storage permissions and available space.');
+                toast('NOT SAVED. Keep your report and photo selected. Storage error: '+(error.message||'unknown'));
             } finally {button.disabled=false;}
         }
 
@@ -967,7 +1049,13 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             refreshNetworkBadge();
             window.addEventListener("online", refreshNetworkBadge);
             window.addEventListener("offline", refreshNetworkBadge);
-            initMap(); updateProfileUI(); initQRCodes(); resetHabitatStory(); refreshTimeUI();
+            initMap(); initQRCodes(); resetHabitatStory(); refreshTimeUI();
+            loadDurableState().then(()=>updateProfileUI()).catch(error=>{
+                storageReady=false;
+                updateProfileUI(); // Other modules still load with validated legacy data.
+                toast('Local storage unavailable; observations cannot be saved until restored.');
+                console.warn('KRESF observation storage:',error.message);
+            });
             setInterval(refreshTimeUI, 60000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
                 navigator.serviceWorker.register('sw.js').catch(() => {});
