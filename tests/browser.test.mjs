@@ -151,6 +151,12 @@ try {
   await page.locator('#habitat-zoom-in').click();
   assert.ok((await page.evaluate(()=>window.KresfHabitat3D.state.radius))<beforeZoom);
   console.log('PASS genuine WebGL context, depth-tested frame rendering, orbit drag and 3D camera zoom');
+  await page.waitForFunction(()=>window.KresfHabitat3D.state.geometry.roadSurfaceAtCenter===0.18);
+  const initialGeometry=await page.evaluate(()=>({...window.KresfHabitat3D.state.geometry}));
+  assert.deepEqual(initialGeometry,{bridge:false,portal:false,corridorOpen:false,
+    fenceBlocked:false,roadSurfaceAtCenter:0.18});
+  console.log('PASS initial 3D scene has level road and no prebuilt underpass');
+
   await camera.click();
   assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('view-side')),true);
   assert.equal(await camera.getAttribute('aria-pressed'),'true');
@@ -170,7 +176,19 @@ try {
   assert.equal(await page.evaluate(()=>window.KresfHabitat3D.state.speed),true);
   await page.locator('#chk-fence').check();
   assert.match(await page.locator('#habitat-hint').innerText(),/fauna underpass/);
+  await page.waitForFunction(()=>window.KresfHabitat3D.state.geometry.fenceBlocked===true);
+  const fenceOnly=await page.evaluate(()=>({...window.KresfHabitat3D.state.geometry}));
+  assert.equal(fenceOnly.portal,false,'Fence alone must not build the underpass');
+  assert.equal(fenceOnly.bridge,false,'Fence alone must not build an elevated road');
+  assert.equal(fenceOnly.corridorOpen,false,'Fence alone must protect against road entry');
   await page.locator('#chk-under').check();
+  await page.waitForFunction(()=>window.KresfHabitat3D.state.geometry.portal===true);
+  const safeCrossing=await page.evaluate(()=>({...window.KresfHabitat3D.state.geometry}));
+  assert.equal(safeCrossing.bridge,true);
+  assert.equal(safeCrossing.corridorOpen,true,'Activated fauna underpass must open fence gates at both entrances');
+  assert.equal(safeCrossing.fenceBlocked,false,'Fence must never obstruct the activated portal');
+  assert.ok(safeCrossing.roadSurfaceAtCenter>fenceOnly.roadSurfaceAtCenter);
+  console.log('PASS underpass builds on selection, road grades into bridge and fence opens protected corridor');
   assert.match(await page.locator('#habitat-thought').innerText(),/found the underpass/i);
   assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('is-crossing')),true);
   assert.equal(await page.evaluate(()=>window.KresfHabitat3D.state.phase),'crossing');
@@ -181,6 +199,8 @@ try {
   assert.equal(await page.locator('#habitat-celebration').isVisible(),false);
   assert.equal(await page.locator('#chk-fence').isChecked(),false);
   assert.equal(await start.isEnabled(),true);
+  await page.waitForFunction(()=>window.KresfHabitat3D.state.geometry.portal===false);
+  assert.equal(await page.evaluate(()=>window.KresfHabitat3D.state.geometry.roadSurfaceAtCenter),0.18);
   console.log('PASS interactive Habitat Lab choices, crossing, 5-second celebration and automatic reset');
 
   // The alert state machine must use the fixed 300m radius only in simulated mode.
