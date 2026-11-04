@@ -44,7 +44,7 @@ try {
   await page.locator('#rep-photo').setInputFiles({
     name:'koala-classroom-test.png',
     mimeType:'image/png',
-    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9G7hQAAAAASUVORK5CYII=', 'base64')
+    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGOUqPJlYGBgYmBgYGBgAAAKaQDj+IylJQAAAABJRU5ErkJggg==', 'base64')
   });
   await page.locator('#rep-photo-preview').waitFor({state:'visible',timeout:5000});
   await page.locator('button[onclick="submitReport()"]').click();
