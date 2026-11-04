@@ -30,7 +30,7 @@ try {
   assert.equal(await page.locator('#rep-demo').isChecked(),true);
   await page.waitForFunction(()=>storageReady);
   await page.locator('button[onclick="submitReport()"]').click();
-  assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
+  await page.waitForFunction(()=>document.querySelector('#prof-xp')?.innerText==='50 XP');
   assert.match(await page.locator('#logs-list-container').innerText(),/Classroom demo — no location/);
   console.log('PASS classroom observation saves without GPS');
 
