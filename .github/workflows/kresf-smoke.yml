@@ -13,12 +13,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Build reviewed Tailwind stylesheet (staging)
+      - name: Verify reproducible self-hosted stylesheet
         run: |
           npx --yes tailwindcss@3.4.17 -c tailwind.config.cjs -i app/styles/tailwind.input.css -o /tmp/kresf-tailwind.css --minify
-          echo KRESF_CSS_BEGIN
-          base64 -w0 /tmp/kresf-tailwind.css | fold -w 1000
-          echo KRESF_CSS_END
+          cmp app/styles/tailwind.css /tmp/kresf-tailwind.css
       - name: Validate educational PWA source
         run: node tests/smoke.test.mjs
       - name: Scan source and workflow security invariants
