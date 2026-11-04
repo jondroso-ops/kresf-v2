@@ -28,8 +28,9 @@ try {
 
   await page.locator('button[onclick="switchView(\'report\', this)"]').click();
   assert.equal(await page.locator('#rep-demo').isChecked(),true);
+  await page.waitForFunction(()=>storageReady);
   await page.locator('button[onclick="submitReport()"]').click();
-  assert.equal(await page.locator('#prof-xp').innerText(),'50 XP');
+  await page.waitForFunction(()=>document.querySelector('#prof-xp')?.innerText==='50 XP');
   assert.match(await page.locator('#logs-list-container').innerText(),/Classroom demo — no location/);
   console.log('PASS classroom observation saves without GPS');
 
@@ -113,6 +114,105 @@ try {
 
   assert.deepEqual(errors,[],'Unexpected uncaught browser JavaScript exceptions');
   console.log('PASS no unhandled JavaScript errors in tested flows');
+  // Stage 1: reject failed persistence without clearing inputs or awarding XP.
+  const failureContext=await browser.newContext({viewport:{width:390,height:844}});
+  const failurePage=await failureContext.newPage();
+  try {
+    await failurePage.route(/(cdn\\.tailwindcss\\.com|unpkg\\.com|cdn\\.jsdelivr\\.net)/,route=>route.abort());
+    await failurePage.goto(new URL('app/',base).href,{waitUntil:'domcontentloaded'});
+    await failurePage.waitForFunction(()=>storageReady);
+    await failurePage.locator('.nav-btn').nth(1).click();
+    await failurePage.locator('#rep-status').selectOption({index:1});
+    const previous=await failurePage.locator('#rep-status').inputValue();
+    await failurePage.evaluate(()=>{
+      transactObservation=async()=>{throw new DOMException('Simulated quota exceeded','QuotaExceededError');};
+    });
+    await failurePage.locator('button[onclick="submitReport()"]').click();
+    await failurePage.waitForFunction(()=>document.querySelector('#toast')?.innerText.includes('NOT SAVED'));
+    assert.equal(await failurePage.locator('#rep-status').inputValue(),previous);
+    assert.equal(await failurePage.locator('#prof-xp').innerText(),'0 XP');
+    const noRecords=await failurePage.evaluate(async()=>{
+      const db=await openPhotoDb();
+      return new Promise((resolve,reject)=>{
+        const req=db.transaction('observations','readonly').objectStore('observations').getAll();
+        req.onsuccess=()=>resolve(req.result.length);
+        req.onerror=()=>reject(req.error);
+      });
+    });
+    assert.equal(noRecords,0);
+    console.log('PASS failed durable commit preserves report and awards no XP');
+  } finally {await failureContext.close();}
+
+  // Stage 1: corrupted legacy JSON shape must not crash unrelated modules.
+  const damagedContext=await browser.newContext();
+  await damagedContext.addInitScript(()=>{
+    try{
+      localStorage.setItem('kresf_logs',JSON.stringify({length:1}));
+      localStorage.setItem('kresf_xp',JSON.stringify({invalid:true}));
+    }catch(e){}
+  });
+  const damagedPage=await damagedContext.newPage();
+  const damagedErrors=[];
+  damagedPage.on('pageerror',e=>damagedErrors.push(e.message));
+  try{
+    await damagedPage.route(/(cdn\\.tailwindcss\\.com|unpkg\\.com|cdn\\.jsdelivr\\.net)/,route=>route.abort());
+    await damagedPage.goto(new URL('app/',base).href,{waitUntil:'domcontentloaded'});
+    await damagedPage.waitForFunction(()=>storageReady);
+    await damagedPage.locator('.nav-btn').nth(3).click();
+    assert.equal(await damagedPage.locator('#prof-xp').innerText(),'0 XP');
+    assert.match(await damagedPage.locator('#logs-list-container').innerText(),/No sightings yet/);
+    await damagedPage.locator('.nav-btn').nth(2).click();
+    assert.equal(await damagedPage.locator('#habitat-start').isEnabled(),true);
+    assert.deepEqual(damagedErrors,[]);
+    console.log('PASS malformed legacy state does not interrupt PWA modules');
+    // Existing v2 records and photo bytes must survive IndexedDB v1 -> v2 upgrade.
+    const upgradeContext=await browser.newContext();
+    const upgradePage=await upgradeContext.newPage();
+    try {
+      await upgradePage.goto(base,{waitUntil:'domcontentloaded'});
+      await upgradePage.evaluate(async()=>{
+        localStorage.setItem('kresf_logs',JSON.stringify([{
+          id:'legacy-photo-1',coords:'Classroom demo — no location',
+          status:'Koala sighting',time:'04/11/2026 12:00',demo:true,photoId:'legacy-photo-1'
+        }]));
+        localStorage.setItem('kresf_xp',JSON.stringify(50));
+        await new Promise((resolve,reject)=>{
+          const req=indexedDB.open('kresf-local-photos-v1',1);
+          req.onupgradeneeded=()=>req.result.createObjectStore('photos');
+          req.onerror=()=>reject(req.error);
+          req.onsuccess=()=>{
+            const db=req.result;
+            const tx=db.transaction('photos','readwrite');
+            tx.objectStore('photos').put(new Blob(['old-photo'],{type:'image/png'}),'legacy-photo-1');
+            tx.oncomplete=()=>{db.close();resolve();};
+            tx.onerror=()=>reject(tx.error);
+          };
+        });
+      });
+      await upgradePage.route(/(cdn\\.tailwindcss\\.com|unpkg\\.com|cdn\\.jsdelivr\\.net)/,route=>route.abort());
+      await upgradePage.goto(new URL('app/',base).href,{waitUntil:'domcontentloaded'});
+      await upgradePage.waitForFunction(()=>storageReady);
+      await upgradePage.locator('.nav-btn').nth(3).click();
+      assert.equal(await upgradePage.locator('#prof-xp').innerText(),'50 XP');
+      assert.match(await upgradePage.locator('#logs-list-container').innerText(),/Koala sighting/);
+      assert.equal(await upgradePage.locator('button:text("⬇ Save photo to phone")').count(),1);
+      const migrated=await upgradePage.evaluate(async()=>{
+        const db=await openPhotoDb();
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction(['observations','photos'],'readonly');
+          const observation=tx.objectStore('observations').get('legacy-photo-1');
+          const photo=tx.objectStore('photos').get('legacy-photo-1');
+          tx.oncomplete=()=>resolve({record:observation.result,photoSize:photo.result?.size});
+          tx.onerror=()=>reject(tx.error);
+        });
+      });
+      assert.equal(migrated.record.photoId,'legacy-photo-1');
+      assert.equal(migrated.photoSize,9);
+      console.log('PASS existing photo and observation survive v1 to v2 database migration');
+    } finally {await upgradeContext.close();}
+
+  }finally{await damagedContext.close();}
+
 } finally {
   await browser.close();
 }
