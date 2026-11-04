@@ -748,7 +748,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 };
                 tx.onerror=()=>reject(tx.error || Error('Cannot read observations'));
                 tx.onabort=()=>reject(tx.error || Error('Observation migration aborted'));
-                migrated.onsuccess=()=>{
+                // xp is the last queued read; its success means all prior reads are complete.
+                xp.onsuccess=()=>{
                     // Deliberately leave legacy data intact for potential recovery.
                     const prior=validateObservations(safeParse('kresf_logs',[]));
                     const priorXP=validateXP(safeParse('kresf_xp',0));
