@@ -100,4 +100,13 @@ check('self hosted stylesheet and QR generator are precached',()=>{
   assert.ok(fs.readFileSync('app/styles/tailwind.css','utf8').includes('.bg-brand-primary'));
   assert.match(app,/src="\.\/vendor\/qrcode\.js"/);
 });
+check('enhanced depth-effect habitat stays lightweight and educational',()=>{
+  assert.match(app,/id="habitat-camera"/);
+  assert.match(app,/function toggleHabitatCamera\(\)/);
+  assert.match(app,/class="habitat-far-trees"/);
+  assert.match(app,/kresf-habitat-scene\.traffic-slow/);
+  assert.match(app,/perspective\(850px\)/);
+  assert.match(app,/not a true physics simulation/);
+  assert.doesNotMatch(app,/three\.js|babylon\.js|webgl2?/i);
+});
 console.log('All KRESF static smoke checks passed. Browser/device validation remains necessary.');
