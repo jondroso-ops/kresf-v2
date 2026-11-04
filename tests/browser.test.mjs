@@ -45,7 +45,7 @@ try {
     mimeType:'image/png',
     buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9G7hQAAAAASUVORK5CYII=', 'base64')
   });
-  assert.equal(await page.locator('#rep-photo-preview').isVisible(), true);
+  await page.locator('#rep-photo-preview').waitFor({state:'visible',timeout:5000});
   await page.locator('button[onclick="submitReport()"]').click();
   await page.locator('button:text("⬇ Save photo to phone")').waitFor();
   const thumb=page.locator('img[alt="Saved observation photo"]');
