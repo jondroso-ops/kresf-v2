@@ -127,10 +127,21 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 #view-lab input[type=checkbox]:disabled{opacity:.35;cursor:not-allowed}
 #habitat-hint strong{color:#12654b}
 
-/* Depth-effect habitat: CSS/SVG only, with a flat fallback for older phones. */
+/* WebGL 3D is rendered on a canvas; the original 2D SVG remains as fallback. */
 .habitat-camera-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px;font-size:12px;font-weight:850;color:#275740}
 .habitat-camera-bar button{border:1px solid #589c79;border-radius:12px;padding:8px 11px;background:#f4ffef;color:#19543a;font-size:11px;font-weight:850;min-height:36px}
 .kresf-habitat-scene{background:linear-gradient(#bfe8c8,#ded0a4);isolation:isolate}
+#habitat-webgl{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab;z-index:1}
+#habitat-webgl:active{cursor:grabbing}
+#habitat-webgl[hidden]{display:none}
+.kresf-habitat-scene.webgl-active{height:290px;min-height:270px}
+.kresf-habitat-scene.webgl-active svg{visibility:hidden;position:absolute;inset:0;width:100%;height:100%}
+@media(max-width:410px){.kresf-habitat-scene.webgl-active{height:270px}}
+
+.kresf-habitat-scene.webgl-active #habitat-webgl{display:block}
+.habitat-view-tools{display:flex;gap:6px;align-items:center}
+.habitat-view-tools button{border:1px solid #589c79;border-radius:10px;padding:8px;min-width:32px;min-height:36px;background:#f4ffef;color:#19543a;font-size:12px;font-weight:800}
+.habitat-view-tools button:focus-visible{outline:3px solid #147b59;outline-offset:2px}
 .kresf-habitat-scene svg{transform:perspective(850px) rotateX(7deg) scale(1.025);transform-origin:50% 70%;transition:transform .45s ease,filter .45s ease;filter:drop-shadow(0 4px 6px #19433550)}
 .kresf-habitat-scene.view-side svg{transform:none;filter:none}
 .kresf-habitat-scene.is-night svg{filter:brightness(.65) saturate(.85) hue-rotate(8deg)}
@@ -277,13 +288,19 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 </div>
 
                 <div class="kresf-feature-panel">
-                    <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">3D-STYLE CLASSROOM MODEL</span></div>
+                    <div class="kresf-panel-top"><span class="kresf-eyebrow">ENGINEERING IN ACTION</span><span class="kresf-demo-tag">INTERACTIVE WEBGL 3D</span></div>
                     <h3 class="kresf-panel-heading">A safer way across</h3>
-                    <p class="kresf-description">Explore a layered, depth-effect road landscape. Watch traffic pass above the wildlife corridor while a mother koala and joey follow protective fencing toward the underpass.</p>
-                    <div class="habitat-camera-bar"><span id="habitat-view-label" aria-live="polite">◈ Perspective view</span><button type="button" id="habitat-camera" onclick="toggleHabitatCamera()" aria-pressed="false">Switch to flat view</button></div>
-                    <button type="button" id="habitat-start" onclick="startHabitatStory()" class="habitat-start-pulse" aria-label="Start interactive koala crossing challenge">▶ START ANIMATION</button>
-                    <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
-                    <div id="habitat-scene" class="kresf-habitat-scene" role="img" aria-label="3D-style classroom road scene with animated traffic, koalas, fencing and optional fauna underpass">
+                    <p class="kresf-description">Rotate a real 3D wildlife-crossing environment with your finger. Study the elevated road, moving traffic, mother koala and joey, fencing and protected underpass from different angles.</p>
+                    <div class="habitat-camera-bar">
+                      <span id="habitat-view-label" aria-live="polite">◈ Interactive 3D — drag to rotate</span>
+                      <div class="habitat-view-tools">
+                        <button type="button" id="habitat-zoom-out" onclick="window.KresfHabitat3D?.zoom(2)" aria-label="Zoom out of 3D scene">−</button>
+                        <button type="button" id="habitat-zoom-in" onclick="window.KresfHabitat3D?.zoom(-2)" aria-label="Zoom into 3D scene">+</button>
+                        <button type="button" id="habitat-camera" onclick="toggleHabitatCamera()" aria-pressed="false">Switch to 2D</button>
+                      </div>
+                    </div>
+                    <div id="habitat-scene" class="kresf-habitat-scene" role="group" aria-label="Interactive WebGL 3D educational wildlife crossing scene with 2D fallback">
+                      <canvas id="habitat-webgl" aria-label="3D scene: drag to orbit around the road and animal crossing" hidden></canvas>
                       <div id="habitat-mood" class="habitat-mood" aria-live="polite">😰 😟</div>
                       <div id="habitat-speed-sign" class="habitat-scene-sign" aria-hidden="true" hidden>🛑 60</div>
                       <div id="habitat-virtual-sign" class="habitat-scene-virtual" aria-hidden="true" hidden>📡</div>
@@ -352,8 +369,10 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                         <g class="kresf-underpass" font-family="system-ui" font-size="12" font-weight="700"><rect x="407" y="217" width="194" height="27" rx="12" fill="#f4f9ea"/><text x="416" y="235" fill="#265941">FAUNA UNDERPASS →</text></g>
                       </svg>
                     </div>
+                    <button type="button" id="habitat-start" onclick="startHabitatStory()" class="habitat-start-pulse" aria-label="Start interactive koala crossing challenge">▶ START ANIMATION</button>
+                    <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
                     <div class="kresf-scene-legend"><span>🌿 Protected habitat</span><span>🧱 Guiding fence</span><span>🚇 Safe crossing</span></div>
-                    <p class="kresf-scene-footnote">Explore perspective or flat view, adjust traffic and add infrastructure. This is a layered 3D-style illustration—not a true physics simulation, measured road-risk assessment or real-world safety alert.</p>
+                    <p class="kresf-scene-footnote">This is a real WebGL 3D model with a rotatable camera and 3D objects. Its movement and risk percentages remain illustrative, not physically calibrated animal behaviour, vehicle dynamics or safety advice. A 2D fallback appears when 3D graphics are unavailable.</p>
                 </div>
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -460,6 +479,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         </div>
     </nav>
 
+    <script src="./habitat-3d.js"></script>
     <script>
         // ===== CONFIG: set these once the site is hosted =====
         // Companion website address for the first QR code. Leave '' to reuse this app's address.
@@ -1013,9 +1033,13 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         function toggleHabitatCamera() {
             const scene=document.getElementById('habitat-scene');
             const flat=scene.classList.toggle('view-side');
-            document.getElementById('habitat-camera').textContent=flat?'Switch to perspective':'Switch to flat view';
+            const available=window.KresfHabitat3D?.supported()||false;
+            window.KresfHabitat3D?.setMode(!flat);
+            document.getElementById('habitat-camera').textContent=flat?'Switch to 3D':'Switch to 2D';
             document.getElementById('habitat-camera').setAttribute('aria-pressed',String(flat));
-            document.getElementById('habitat-view-label').textContent=flat?'▤ Flat side view':'◈ Perspective view';
+            document.getElementById('habitat-view-label').textContent=flat?'▤ 2D illustration':available?'◈ Interactive 3D — drag to rotate':'▤ 2D fallback (3D unsupported)';
+            document.getElementById('habitat-zoom-in').disabled=flat||!available;
+            document.getElementById('habitat-zoom-out').disabled=flat||!available;
         }
         let habitatCrossTimer = null, habitatResetTimer = null;
         const habitatInputs = () => ['chk-fence','chk-under','chk-speed','chk-virtual'].map(id => document.getElementById(id));
@@ -1029,6 +1053,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             habitatInputs().forEach(el => { el.checked = false; el.disabled = true; });
             const scene = document.getElementById('habitat-scene');
             scene.classList.remove('has-fence','has-underpass','is-crossing');
+            window.KresfHabitat3D?.sync({fence:false,under:false,speed:false,virtual:false,night:isNight(),phase:'idle'});
             document.getElementById('habitat-celebration').hidden = true;
             document.getElementById('habitat-speed-sign').hidden = true;
             document.getElementById('habitat-virtual-sign').hidden = true;
@@ -1061,6 +1086,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             scene.classList.toggle('has-underpass', under);
             scene.classList.toggle('traffic-slow', speed);
             scene.classList.toggle('is-night', isNight());
+            window.KresfHabitat3D?.sync({fence,under,speed,virtual,night:isNight(),phase:habitatPhase});
             document.getElementById('habitat-speed-sign').hidden = !speed;
             document.getElementById('habitat-virtual-sign').hidden = !virtual;
             if (habitatPhase !== 'choosing') return;
@@ -1090,6 +1116,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                 thought='We found the underpass! Let’s cross!';
                 hint='Excellent combination! The koalas are following the protective fencing to the underpass.';
                 habitatPhase='crossing';
+                window.KresfHabitat3D?.sync({fence,under,speed,virtual,night:isNight(),phase:'crossing'});
                 habitatInputs().forEach(el => { el.disabled = true; });
                 scene.classList.add('is-crossing');
                 habitatCrossTimer = setTimeout(showHabitatCelebration, 5500);
@@ -1101,6 +1128,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
         function showHabitatCelebration() {
             if (habitatPhase !== 'crossing') return;
             habitatPhase='celebrating';
+            window.KresfHabitat3D?.sync({phase:'celebrating'});
             document.getElementById('habitat-celebration').hidden=false;
             document.getElementById('habitat-hint').textContent =
                 'Congratulations! In the model, fencing helped guide the koalas through the underpass.';
@@ -1234,6 +1262,12 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             window.addEventListener("online", refreshNetworkBadge);
             window.addEventListener("offline", refreshNetworkBadge);
             initMap(); initQRCodes(); resetHabitatStory(); refreshTimeUI();
+            const hasReal3D=window.KresfHabitat3D?.init()||false;
+            if(!hasReal3D){
+                document.getElementById('habitat-camera').disabled=true;
+                document.getElementById('habitat-zoom-in').disabled=true;
+                document.getElementById('habitat-zoom-out').disabled=true;
+            }
             loadDurableState().then(()=>updateProfileUI()).catch(error=>{
                 storageReady=false;
                 updateProfileUI(); // Other modules still load with validated legacy data.

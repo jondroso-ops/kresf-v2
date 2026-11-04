@@ -1,8 +1,8 @@
 // KRESF v3 educational prototype. Offline tiles are not stored.
 // Versioned caches. External dependencies are cached only on successful fetch.
-const SHELL='kresf-v3-shell-5';
+const SHELL='kresf-v3-shell-6';
 const DEPS='kresf-v3-deps-4';
-const CORE=['./','./index.html','./manifest.webmanifest','./styles/tailwind.css','./vendor/qrcode.js','../icon-192.png','../icon-512.png'];
+const CORE=['./','./index.html','./habitat-3d.js','./manifest.webmanifest','./styles/tailwind.css','./vendor/qrcode.js','../icon-192.png','../icon-512.png'];
 const THIRD_PARTY=[
   ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.css','cors'],
   ['https://unpkg.com/leaflet@1.9.4/dist/leaflet.js','cors']

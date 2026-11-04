@@ -100,13 +100,23 @@ check('self hosted stylesheet and QR generator are precached',()=>{
   assert.ok(fs.readFileSync('app/styles/tailwind.css','utf8').includes('.bg-brand-primary'));
   assert.match(app,/src="\.\/vendor\/qrcode\.js"/);
 });
-check('enhanced depth-effect habitat stays lightweight and educational',()=>{
-  assert.match(app,/id="habitat-camera"/);
+check('real 3D Habitat Lab renderer is parsed, local, cached and fallback-safe',()=>{
+  const renderer=fs.readFileSync('app/habitat-3d.js','utf8');
+  new vm.Script(renderer);
+  assert.match(app,/id="habitat-webgl"/);
+  assert.match(app,/src="\.\/habitat-3d\.js"/);
   assert.match(app,/function toggleHabitatCamera\(\)/);
-  assert.match(app,/class="habitat-far-trees"/);
-  assert.match(app,/kresf-habitat-scene\.traffic-slow/);
-  assert.match(app,/perspective\(850px\)/);
-  assert.match(app,/not a true physics simulation/);
-  assert.doesNotMatch(app,/three\.js|babylon\.js|webgl2?/i);
+  assert.match(renderer,/getContext\('webgl'/);
+  assert.match(renderer,/gl\.DEPTH_TEST/);
+  assert.match(renderer,/requestAnimationFrame\(render\)/);
+  assert.match(renderer,/pointermove/);
+  assert.match(renderer,/function road\(\)/);
+  assert.match(renderer,/function fence\(\)/);
+  assert.match(renderer,/function koala\(/);
+  assert.match(renderer,/function vehicle\(/);
+  assert.match(renderer,/function cameraMatrix\(/);
+  assert.match(app,/2D fallback/);
+  assert.match(sw,/\.\/habitat-3d\.js/);
+  assert.doesNotMatch(renderer,/fetch\(|localStorage|navigator\.geolocation/);
 });
 console.log('All KRESF static smoke checks passed. Browser/device validation remains necessary.');

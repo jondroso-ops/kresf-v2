@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 
 const base = process.env.KRESF_BASE_URL || 'http://127.0.0.1:8765/';
 await fs.mkdir('review/screenshots',{recursive:true});
-const browser = await chromium.launch({headless:true});
+const browser = await chromium.launch({headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const views=[
   {name:'01-website-desktop',url:'',viewport:{width:1440,height:900},tab:null},
   {name:'02-website-mobile',url:'',viewport:{width:390,height:844},tab:null},
@@ -24,6 +24,9 @@ try {
     if(entry.tab!==null) {
       await page.locator('.nav-btn').nth(entry.tab).click();
       await page.waitForTimeout(650);
+      if(entry.tab===2){
+        await page.waitForFunction(()=>window.KresfHabitat3D?.state.frames>3,{timeout:12000});
+      }
     }
     const path='review/screenshots/'+entry.name+'.png';
     await page.screenshot({path,fullPage:entry.tab===null});
