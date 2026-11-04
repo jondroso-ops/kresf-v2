@@ -15,7 +15,7 @@ try{
     const el=document.querySelector('.bg-slate-900');
     return el && getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)';
   },{timeout:25000});
-  assert.notEqual(await page.locator('#leafletMap .leaflet-container').count(),0,
+  assert.notEqual(await page.locator('#leafletMap.leaflet-container').count(),0,
     'Live Leaflet map was not initialized');
   await page.locator('.nav-btn').nth(3).click();
   const code=page.locator('#qr-site svg');
