@@ -98,6 +98,14 @@ try {
   await page.locator('.nav-btn').nth(3).click();
   assert.equal(await page.locator('#prof-xp').innerText(),'100 XP');
   console.log('PASS cached PWA shell reopens offline with two saved classroom records intact');
+  await page.locator('#qr-site svg').waitFor({timeout:5000});
+  const cssOffline=await page.evaluate(()=>{
+    const element=document.querySelector('.bg-slate-900');
+    return !!element && getComputedStyle(element).backgroundColor!=='rgba(0, 0, 0, 0)';
+  });
+  assert.equal(cssOffline,true);
+  console.log('PASS local QR and compiled Tailwind stylesheet available offline');
+
   await context.setOffline(false);
   // Guided Habitat Lab: choices drive visible story phases, crossing, celebration and reset.
   await page.locator('.nav-btn').nth(2).click();
