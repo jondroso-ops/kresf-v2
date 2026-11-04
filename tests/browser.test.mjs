@@ -110,7 +110,17 @@ try {
   // Guided Habitat Lab: choices drive visible story phases, crossing, celebration and reset.
   await page.locator('.nav-btn').nth(2).click();
   const start=page.locator('#habitat-start');
+  const camera=page.locator('#habitat-camera');
   assert.equal(await start.isEnabled(),true);
+  assert.match(await page.locator('#habitat-view-label').innerText(),/Perspective/);
+  await camera.click();
+  assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('view-side')),true);
+  assert.equal(await camera.getAttribute('aria-pressed'),'true');
+  await camera.click();
+  assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('view-side')),false);
+  assert.equal(await camera.getAttribute('aria-pressed'),'false');
+  assert.equal(await page.locator('#habitat-scene svg .habitat-far-trees').count(),1);
+  console.log('PASS accessible Habitat camera toggle and layered 3D-style terrain');
   assert.equal(await page.locator('#chk-fence').isEnabled(),false);
   await start.click();
   assert.equal(await page.locator('#chk-fence').isEnabled(),true);
@@ -118,10 +128,12 @@ try {
   assert.match(await page.locator('#habitat-thought').innerText(),/warning signal/i);
   await page.locator('#chk-speed').check();
   assert.match(await page.locator('#habitat-thought').innerText(),/Traffic is slower/);
+  assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('traffic-slow')),true);
   await page.locator('#chk-fence').check();
   assert.match(await page.locator('#habitat-hint').innerText(),/fauna underpass/);
   await page.locator('#chk-under').check();
   assert.match(await page.locator('#habitat-thought').innerText(),/found the underpass/i);
+  assert.equal(await page.locator('#habitat-scene').evaluate(el=>el.classList.contains('is-crossing')),true);
   await page.waitForTimeout(5650);
   assert.equal(await page.locator('#habitat-celebration').isVisible(),true);
   assert.match(await page.locator('#habitat-celebration').innerText(),/Congratulations/);
