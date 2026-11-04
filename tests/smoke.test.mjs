@@ -77,7 +77,7 @@ check('audio limited to user-started 300m demonstration',()=>{
 });
 check('private photo storage and owner approval requirements',()=>{
   assert.match(app,/indexedDB\.open\(PHOTO_DB_NAME, 2\)/);
-  assert.match(app,/await transactObservation\(record,file \|\| null,nextXP\)/);
+  assert.match(app,/await transactObservation\(record,cleanPhoto,nextXP\)/);
   assert.match(app,/function addPhotoControls\(row, record\)/);
   assert.match(app,/Save photo to phone/);
   assert.match(app,/Remove saved photo/);
