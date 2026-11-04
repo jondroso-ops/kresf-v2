@@ -63,7 +63,7 @@
       const b=vertex(Math.PI*(i+1)/rings,Math.PI*2*j/segments);
       const c=vertex(Math.PI*(i+1)/rings,Math.PI*2*(j+1)/segments);
       const d=vertex(Math.PI*i/rings,Math.PI*2*(j+1)/segments);
-      for(const q of [a,b,c,a,c,d])out.push(...q,...q);
+      for(const q of [a,c,b,a,d,c])out.push(...q,...q);
     }
     return out;
   }
@@ -73,12 +73,12 @@
       const a=2*Math.PI*j/segments,b=2*Math.PI*(j+1)/segments;
       const p=[Math.cos(a),-1,Math.sin(a)],q=[Math.cos(b),-1,Math.sin(b)];
       const r=[Math.cos(b),1,Math.sin(b)],t=[Math.cos(a),1,Math.sin(a)];
-      for(const x of [p,q,r,p,r,t]){
+      for(const x of [p,r,q,p,t,r]){
         const n=norm([x[0],0,x[2]]);
         out.push(...x,...n);
       }
-      for(const x of [[0,1,0],t,r])out.push(...x,0,1,0);
-      for(const x of [[0,-1,0],q,p])out.push(...x,0,-1,0);
+      for(const x of [[0,1,0],r,t])out.push(...x,0,1,0);
+      for(const x of [[0,-1,0],p,q])out.push(...x,0,-1,0);
     }
     return out;
   }
