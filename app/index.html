@@ -125,6 +125,12 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
 @keyframes koala-cross-joey{0%{transform:translate(17px,229px);opacity:1}55%{transform:translate(160px,229px);opacity:1}88%{transform:translate(225px,227px);opacity:.92}100%{transform:translate(266px,227px);opacity:0}}
 @keyframes habitat-pulse{0%,100%{box-shadow:0 0 0 4px #f7b85a50;filter:brightness(1)}50%{box-shadow:0 0 0 10px #f7b85a10;filter:brightness(1.13)}}
 @media(prefers-reduced-motion:reduce){.habitat-start-pulse{animation:none}.kresf-habitat-scene.is-crossing .kresf-mother,.kresf-habitat-scene.is-crossing .kresf-joey{animation:none;opacity:0}}
+
+.habitat-scene-sign,.habitat-scene-virtual{position:absolute;right:17%;top:23%;padding:4px 6px;border:2px solid white;border-radius:12px;background:#f8b844;font-size:clamp(.65rem,2vw,1.05rem);font-weight:900;color:#3c3126;z-index:3}
+.habitat-scene-virtual{right:32%;top:12%;background:#d8effb}
+[hidden].habitat-scene-sign,[hidden].habitat-scene-virtual{display:none}
+#view-lab input[type=checkbox]:disabled{opacity:.35;cursor:not-allowed}
+#habitat-hint strong{color:#12654b}
 </style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden antialiased flex flex-col pt-[env(safe-area-inset-top)]">
@@ -269,6 +275,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
                     <p id="habitat-hint" class="habitat-hint" aria-live="polite">Press Start Animation, then choose ways to help the koalas cross. Look for the safest combined solution.</p>
                     <div id="habitat-scene" class="kresf-habitat-scene" role="img" aria-label="Interactive illustrated road crossing with a mother koala, joey, fencing and an optional fauna underpass">
                       <div id="habitat-mood" class="habitat-mood" aria-live="polite">😰 😟</div>
+                      <div id="habitat-speed-sign" class="habitat-scene-sign" aria-hidden="true" hidden>🛑 60</div>
+                      <div id="habitat-virtual-sign" class="habitat-scene-virtual" aria-hidden="true" hidden>📡</div>
                       <div id="habitat-thought" class="habitat-thought">How can we cross safely?</div>
                       <div id="habitat-celebration" class="habitat-celebration" role="status" aria-live="assertive" hidden>🎉🐨🎉<strong>Congratulations, you did it!</strong><span>The koalas crossed safely in this simulation.</span><small>Resetting the challenge in 5 seconds…</small></div>
                       <svg viewBox="0 0 620 258" width="100%" role="presentation" aria-hidden="true">
@@ -683,6 +691,96 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             switchView('profile', document.querySelectorAll('.nav-btn')[3]);
         }
 
+        // Interactive school activity state machine. No real animals or road conditions are inferred.
+        let habitatPhase = 'idle';
+        let habitatCrossTimer = null, habitatResetTimer = null;
+        const habitatInputs = () => ['chk-fence','chk-under','chk-speed','chk-virtual'].map(id => document.getElementById(id));
+        function clearHabitatTimers() {
+            if (habitatCrossTimer !== null) { clearTimeout(habitatCrossTimer); habitatCrossTimer = null; }
+            if (habitatResetTimer !== null) { clearTimeout(habitatResetTimer); habitatResetTimer = null; }
+        }
+        function resetHabitatStory() {
+            clearHabitatTimers();
+            habitatPhase = 'idle';
+            habitatInputs().forEach(el => { el.checked = false; el.disabled = true; });
+            const scene = document.getElementById('habitat-scene');
+            scene.classList.remove('has-fence','has-underpass','is-crossing');
+            document.getElementById('habitat-celebration').hidden = true;
+            document.getElementById('habitat-speed-sign').hidden = true;
+            document.getElementById('habitat-virtual-sign').hidden = true;
+            document.getElementById('habitat-start').disabled = false;
+            document.getElementById('habitat-start').textContent = '▶ START ANIMATION';
+            document.getElementById('habitat-hint').textContent =
+                'Press Start Animation, then introduce the road safety options to help the koalas.';
+            document.getElementById('habitat-mood').textContent = '😰 😟';
+            document.getElementById('habitat-thought').textContent = 'How can we cross safely?';
+            calculateLabRisk();
+        }
+        function startHabitatStory() {
+            resetHabitatStory();
+            habitatPhase = 'choosing';
+            habitatInputs().forEach(el => { el.disabled = false; });
+            document.getElementById('habitat-start').disabled = true;
+            document.getElementById('habitat-start').textContent = '🌿 CHOOSE THE SAFETY OPTIONS BELOW';
+            document.getElementById('habitat-hint').textContent =
+                'The koalas are worried about traffic. Try virtual fencing, lower speeds and exclusion fencing. Then add a fauna underpass.';
+            document.getElementById('habitat-thought').textContent = 'The road looks frightening!';
+            calculateLabRisk();
+        }
+        function renderHabitatStory() {
+            const fence = document.getElementById('chk-fence').checked,
+                under = document.getElementById('chk-under').checked,
+                speed = document.getElementById('chk-speed').checked,
+                virtual = document.getElementById('chk-virtual').checked;
+            const scene = document.getElementById('habitat-scene');
+            scene.classList.toggle('has-fence', fence);
+            scene.classList.toggle('has-underpass', under);
+            document.getElementById('habitat-speed-sign').hidden = !speed;
+            document.getElementById('habitat-virtual-sign').hidden = !virtual;
+            if (habitatPhase !== 'choosing') return;
+            let mood='😰 😟', thought='How can we get past the traffic?';
+            let hint='Try different options. Exclusion fencing and a fauna underpass together offer a modelled crossing route.';
+            if (virtual) {
+                thought='A warning signal… but where do we cross?';
+                hint='Virtual warnings alone do not create a physical crossing. Keep exploring.';
+            }
+            if (speed) {
+                mood='😐 😕';
+                thought='Traffic is slower, but we still need a route!';
+                hint='Slower vehicles change the example, but do not provide the koalas with a protected crossing.';
+            }
+            if (fence) {
+                mood='🤔 😟';
+                thought='This fence keeps us back… where is the tunnel?';
+                hint='The fence prevents access to the roadway. Now choose a fauna underpass to create a crossing.';
+            }
+            if (under && !fence) {
+                mood='🤔 😯';
+                thought='There is a tunnel! How do we find it safely?';
+                hint='The underpass needs guidance fencing in this simple demonstration. Tick exclusion fencing too.';
+            }
+            if (fence && under) {
+                mood='😄 🥰';
+                thought='We found the underpass! Let’s cross!';
+                hint='Excellent combination! The koalas are following the protective fencing to the underpass.';
+                habitatPhase='crossing';
+                habitatInputs().forEach(el => { el.disabled = true; });
+                scene.classList.add('is-crossing');
+                habitatCrossTimer = setTimeout(showHabitatCelebration, 5500);
+            }
+            document.getElementById('habitat-mood').textContent = mood;
+            document.getElementById('habitat-thought').textContent = thought;
+            document.getElementById('habitat-hint').textContent = hint;
+        }
+        function showHabitatCelebration() {
+            if (habitatPhase !== 'crossing') return;
+            habitatPhase='celebrating';
+            document.getElementById('habitat-celebration').hidden=false;
+            document.getElementById('habitat-hint').textContent =
+                'Congratulations! In the model, fencing helped guide the koalas through the underpass.';
+            habitatResetTimer = setTimeout(resetHabitatStory, 5000);
+        }
+
         // Illustrative risk model. Baseline is lower by day (60) and full at night (100).
         // Interventions reduce that baseline; fencing + underpass work together.
         function calculateLabRisk() {
@@ -702,7 +800,8 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             bar.style.width = `${risk}%`;
             bar.className = `bg-${col} h-full transition-all duration-500`;
             txt.className = `text-4xl font-black font-mono text-${col}`;
-            document.getElementById('lab-note').innerText = night ? 'Night: baseline risk 100% (peak ground movement).' : 'Day: baseline risk 60%.';
+            document.getElementById('lab-note').innerText = night ? 'Night: baseline risk 100% (illustrative index).' : 'Day: baseline risk 60% (illustrative index).';
+            renderHabitatStory();
         }
 
         function updateProfileUI() {
@@ -752,7 +851,7 @@ body>nav .nav-btn span:last-child {font-size:11px;font-weight:760}
             refreshNetworkBadge();
             window.addEventListener("online", refreshNetworkBadge);
             window.addEventListener("offline", refreshNetworkBadge);
-            initMap(); updateProfileUI(); initQRCodes(); refreshTimeUI();
+            initMap(); updateProfileUI(); initQRCodes(); resetHabitatStory(); refreshTimeUI();
             setInterval(refreshTimeUI, 60000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
                 navigator.serviceWorker.register('sw.js').catch(() => {});
